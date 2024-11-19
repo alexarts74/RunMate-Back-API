@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user: one
+  pace: MyString
+  distance: 1
+  availability: MyString
+  level: MyString
+  preferred_gender: MyString
+  age_range: 
+  created_at: 2024-11-19 23:17:40
+  updated_at: 2024-11-19 23:17:40
+
+two:
+  user: two
+  pace: MyString
+  distance: 1
+  availability: MyString
+  level: MyString
+  preferred_gender: MyString
+  age_range: 
+  created_at: 2024-11-19 23:17:40
+  updated_at: 2024-11-19 23:17:40
