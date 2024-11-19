@@ -14,7 +14,7 @@ Devise.setup do |config|
   # confirmation, reset password and unlock tokens in the database.
   # Devise will use the `secret_key_base` as its `secret_key`
   # by default. You can change it below and use your own secret key.
-  # config.secret_key = 'cdc4072a9ce8b236aeb3765fe333fd00ad41d1bc90d15fb9c14718e0d3e7579fbe018d1313d9e93bd6ddb27eade4cde504f506d3edf92ae1796be8da87757666'
+  # config.secret_key = 'DEVISE_SECRET_KEY'
 
   # ==> Controller configuration
   # Configure the parent class to the devise controllers.
@@ -304,6 +304,11 @@ Devise.setup do |config|
   # Note: These might become the new default in future versions of Devise.
   config.responder.error_status = :unprocessable_entity
   config.responder.redirect_status = :see_other
+
+  config.jwt do |jwt|
+    jwt.secret = ENV['DEVISE_JWT_SECRET_KEY'] # Assurez-vous de définir cette variable d'environnement
+  end
+
 
   # ==> Configuration for :registerable
 
