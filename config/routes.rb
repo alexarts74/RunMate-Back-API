@@ -1,7 +1,23 @@
 Rails.application.routes.draw do
-  devise_for :users
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+    devise_for :users, controllers: {
+      sessions: 'api/sessions',
+      registrations: 'api/registrations'
+    }
 
-  # Defines the root path route ("/")
-  # root "articles#index"
+    namespace :api do
+      devise_scope :user do
+        # Connexion
+        post 'users/log_in', to: 'sessions#create'
+        # Déconnexion
+        delete 'users/log_out', to: 'sessions#destroy'
+        # Inscription
+        post 'users/sign_up', to: 'registrations#create'
+        # Suppression de compte
+        delete 'users/sign_out', to: 'registrations#destroy'
+      end
+
+      # Autres ressources API
+      resources :messages, only: [:index, :show, :update, :destroy]
+      resources :users, only: [:index, :show, :update, :destroy]
+    end
 end

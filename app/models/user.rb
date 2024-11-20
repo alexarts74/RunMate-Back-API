@@ -19,7 +19,11 @@ class User < ApplicationRecord
     before_validation :ensure_authentication_token, on: :create
 
     def ensure_authentication_token
-        self.authentication_token ||= generate_authentication_token
+        if authentication_token.blank?
+            self.authentication_token = generate_authentication_token
+            save(validate: false)
+        end
+        authentication_token
     end
 
     def destroy_messages
@@ -30,7 +34,6 @@ class User < ApplicationRecord
     private
 
     def generate_authentication_token
-        puts "In generate_authentication_token"
         loop do
             token = SecureRandom.hex(20)
             break token unless User.where(authentication_token: token).exists?
