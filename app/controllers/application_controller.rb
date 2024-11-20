@@ -8,6 +8,10 @@ class ApplicationController < ActionController::API
 
   private
 
+  def log_application_info
+    Rails.logger.info "Controller: #{params[:controller]}, Action: #{params[:action]}"
+  end
+
   def authenticate_user_from_token!
     token = request.headers['Authorization']&.split(' ')&.last
 
@@ -28,18 +32,24 @@ class ApplicationController < ActionController::API
     if params[:user].present?
       devise_parameter_sanitizer.permit(:sign_up, keys: [
         :name,
+        :last_name,
         :bio,
         :age,
-        :image,
-        :level
+        :profile_image,
+        :level,
+        :gender,
+        :location
       ])
 
       devise_parameter_sanitizer.permit(:account_update, keys: [
         :name,
+        :last_name,
         :bio,
         :age,
-        :image,
-        :level
+        :profile_image,
+        :level,
+        :gender,
+        :location
       ])
     end
   end

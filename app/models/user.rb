@@ -12,7 +12,7 @@ class User < ApplicationRecord
     validates :age, presence: true
     validates :level, presence: true
     validates :bio, presence: true
-    validates :image, presence: true
+    validates :profile_image, presence: true
     validates :authentication_token, presence: true, uniqueness: true
 
     before_create :generate_authentication_token

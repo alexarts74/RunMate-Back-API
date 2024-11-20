@@ -44,13 +44,17 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_19_223726) do
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
     t.string "name"
-    t.text "bio"
+    t.string "last_name"
     t.integer "age"
-    t.string "image"
+    t.string "gender"
+    t.string "location"
+    t.string "profile_image"
     t.string "level"
+    t.text "bio"
     t.string "authentication_token"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["authentication_token"], name: "index_users_on_authentication_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end

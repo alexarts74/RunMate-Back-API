@@ -1,4 +1,3 @@
-
 class Api::RegistrationsController < Devise::RegistrationsController
     include ActionController::MimeResponds
     respond_to :json
@@ -45,6 +44,18 @@ class Api::RegistrationsController < Devise::RegistrationsController
     end
 
     def sign_up_params
-        params.require(:user).permit(:email, :password, :password_confirmation, :name, :bio, :age, :image, :level)
+        params.require(:user).permit(
+          :email,
+          :password,
+          :password_confirmation,
+          :name,
+          :last_name,
+          :bio,
+          :age,
+          :profile_image,
+          :level,
+          :gender,
+          :location
+        )
     end
 end
