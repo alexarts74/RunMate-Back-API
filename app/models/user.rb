@@ -5,6 +5,8 @@ class User < ApplicationRecord
         :recoverable, :rememberable, :validatable
   has_many :sent_messages, class_name: 'Message', foreign_key: 'sender_id', dependent: :destroy
   has_many :received_messages, class_name: 'Message', foreign_key: 'recipient_id', dependent: :destroy
+  has_one :runner_profile, dependent: :destroy
+  has_one :runner_preferences, dependent: :destroy
 
     validates :name, presence: true
     validates :email, presence: true, uniqueness: true

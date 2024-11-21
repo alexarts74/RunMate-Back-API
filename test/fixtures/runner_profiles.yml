@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user: one
+  actual_pace: MyString
+  usual_distance: 1
+  availability: MyString
+  level: MyString
+
+two:
+  user: two
+  actual_pace: MyString
+  usual_distance: 1
+  availability: MyString
+  level: MyString
