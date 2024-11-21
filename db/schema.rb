@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_21_212553) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_21_213401) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -22,6 +22,17 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_21_212553) do
     t.datetime "updated_at", null: false
     t.index ["recipient_id"], name: "index_messages_on_recipient_id"
     t.index ["sender_id"], name: "index_messages_on_sender_id"
+  end
+
+  create_table "runner_profiles", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "actual_pace"
+    t.integer "usual_distance"
+    t.string "availability"
+    t.string "level"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_runner_profiles_on_user_id"
   end
 
   create_table "running_preferences", force: :cascade do |t|
@@ -60,5 +71,6 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_21_212553) do
 
   add_foreign_key "messages", "users", column: "recipient_id"
   add_foreign_key "messages", "users", column: "sender_id"
+  add_foreign_key "runner_profiles", "users"
   add_foreign_key "running_preferences", "users"
 end
