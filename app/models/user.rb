@@ -9,10 +9,12 @@ class User < ApplicationRecord
   has_one :runner_preferences, dependent: :destroy
 
     validates :name, presence: true
-    validates :email, presence: true, uniqueness: true
+    validates :last_name, presence: true
+    validates :email, presence: true,
+                      uniqueness: true,
+                      format: { with: URI::MailTo::EMAIL_REGEXP }
     validates :password, presence: true
     validates :age, presence: true
-    validates :level, presence: true
     validates :bio, presence: true
     validates :profile_image, presence: true
     validates :authentication_token, presence: true, uniqueness: true

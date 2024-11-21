@@ -2,12 +2,14 @@ class Api::RegistrationsController < Devise::RegistrationsController
     include ActionController::MimeResponds
     respond_to :json
 
-    # skip_before_action :verify_authenticity_token
     skip_before_action :authenticate_scope!, only: [:destroy]
     before_action :authenticate_user_from_token!, only: [:destroy]
 
     def create
         build_resource(sign_up_params)
+        Rails.logger.info "Paramètres reçus : #{params.inspect}"
+        Rails.logger.info "Erreurs de validation : #{resource.errors.full_messages}" unless resource.valid?
+
         if resource.save
             sign_up(resource_name, resource) if resource.active_for_authentication?
             render json: {
@@ -16,20 +18,21 @@ class Api::RegistrationsController < Devise::RegistrationsController
               authentication_token: resource.authentication_token
             }, status: :created
         else
+            Rails.logger.info "Erreurs de validation : #{resource.errors.full_messages}"
             render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
         end
     end
 
-
     def destroy
-        begin
-          current_user.destroy_messages
-          current_user.destroy
-          render json: { message: "Compte supprimé avec succès" }, status: :ok
-        rescue => e
-          render json: { error: "Erreur lors de la suppression du compte: #{e.message}" }, status: :unprocessable_entity
-        end
+      begin
+        current_user.destroy_messages
+        current_user.destroy
+        render json: { message: "Compte supprimé avec succès" }, status: :ok
+      rescue => e
+        render json: { error: "Erreur lors de la suppression du compte: #{e.message}" }, status: :unprocessable_entity
+      end
     end
+    
     private
 
     def authenticate_user_from_token!
@@ -53,7 +56,6 @@ class Api::RegistrationsController < Devise::RegistrationsController
           :bio,
           :age,
           :profile_image,
-          :level,
           :gender,
           :location
         )
