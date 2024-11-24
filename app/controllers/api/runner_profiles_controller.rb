@@ -35,8 +35,8 @@ class Api::RunnerProfilesController < ApplicationController
     params.require(:runner_profile).permit(
       :actual_pace,
       :usual_distance,
-      :availability,
-      :level
+      :objective,
+      :availability => []
     )
   end
 end
