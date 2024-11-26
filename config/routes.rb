@@ -1,4 +1,8 @@
 Rails.application.routes.draw do
+  namespace :api do
+    get 'users/show'
+    get 'users/update'
+  end
     devise_for :users, controllers: {
       sessions: 'api/sessions',
       registrations: 'api/registrations'
@@ -6,14 +10,17 @@ Rails.application.routes.draw do
 
     namespace :api do
       devise_scope :user do
-        # Connexion
+        # Authentification
         post 'users/log_in', to: 'sessions#create'
-        # Déconnexion
         delete 'users/log_out', to: 'sessions#destroy'
-        # Inscription
+
+        # Gestion du compte
         post 'users/sign_up', to: 'registrations#create'
-        # Suppression de compte
-        delete 'users/sign_out', to: 'registrations#destroy'
+        delete 'users/sign_out', to: 'registrations#destroy'  # Suppression du compte via Devise
+
+        # Profil utilisateur
+        get 'users/profile', to: 'users#show'
+        put 'users/profile', to: 'users#update'
       end
 
       # Autres ressources API
