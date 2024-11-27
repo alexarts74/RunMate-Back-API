@@ -1,6 +1,8 @@
 class User < ApplicationRecord
+  attr_accessor :skip_password_validation
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+
   devise :database_authenticatable, :registerable,
         :recoverable, :rememberable, :validatable
   has_many :sent_messages, class_name: 'Message', foreign_key: 'sender_id', dependent: :destroy
@@ -13,7 +15,7 @@ class User < ApplicationRecord
     validates :email, presence: true,
                       uniqueness: true,
                       format: { with: URI::MailTo::EMAIL_REGEXP }
-    validates :password, presence: true
+    validates :password, presence: true, unless: :skip_password_validation
     validates :age, presence: true
     validates :bio, presence: true
     validates :profile_image, presence: true
