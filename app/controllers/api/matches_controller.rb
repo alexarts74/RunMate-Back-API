@@ -8,9 +8,6 @@ class Api::MatchesController < ApplicationController
       filter_availability: params[:filter_availability] == 'true'
     }
 
-    Rails.logger.info "=== MATCHING DEBUG ==="
-    Rails.logger.info "Filters: #{@filters.inspect}"
-
     base_matches = User.joins(:runner_profile)
                       .where.not(id: current_user.id)
                       .where(location: current_user.location)
@@ -20,19 +17,14 @@ class Api::MatchesController < ApplicationController
 
     # Ici ce sont les utilisateurs qui ont le même objectif et sont dans la même ville que le current_user
 
-    Rails.logger.info "Base matches count: #{base_matches.count}"
 
     matches = apply_filters(base_matches)
+
 
     matches_with_details = matches.map do |user|
       pace_score = pace_compatibility(user)
       distance_score = distance_compatibility(user)
       availability_score = availability_compatibility(user)
-
-      Rails.logger.info "Match details for user #{user.id}:"
-      Rails.logger.info "- Pace score: #{pace_score}"
-      Rails.logger.info "- Distance score: #{distance_score}"
-      Rails.logger.info "- Availability score: #{availability_score}"
 
       # Calcul du score et du pourcentage
       score = calculate_compatibility_score(user)
@@ -54,11 +46,6 @@ class Api::MatchesController < ApplicationController
         }
       }
     end
-
-    Rails.logger.info "Final matches count: #{matches_with_details.size}"
-    Rails.logger.info "Response data: #{matches_with_details.inspect}"
-    Rails.logger.info "===================="
-
     render json: { matches: matches_with_details, total: matches_with_details.size }
   end
 
