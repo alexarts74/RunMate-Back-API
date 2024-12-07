@@ -27,6 +27,10 @@ Rails.application.routes.draw do
       resources :messages, only: [:index, :show, :update, :destroy]
       resources :users, only: [:index, :show, :update, :destroy]
       resource :runner_profile, only: [:create, :update]
-      resources :matches, only: [:index]
+      resources :matches, only: [:index] do
+        collection do
+          post 'apply_filters'
+        end
+      end
     end
 end

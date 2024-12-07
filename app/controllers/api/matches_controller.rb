@@ -2,75 +2,160 @@ class Api::MatchesController < ApplicationController
   before_action :authenticate_user_from_token!
 
   def index
-    @filters = {
-      filter_pace: params[:filter_pace] == 'true',
-      filter_distance: params[:filter_distance] == 'true',
-      filter_availability: params[:filter_availability] == 'true'
-    }
-
     # 1. Base matches (critères fondamentaux)
-    base_matches = User.joins(:runner_profile)
-                      .where.not(id: current_user.id)
-                      .where(location: current_user.location)
-                      .where(runner_profiles: {
-                        objective: current_user.runner_profile.objective
-                      })
+    @base_matches = User.joins(:runner_profile)
+                        .where.not(id: current_user.id)
+                        .where(location: current_user.location)
+                        .where(runner_profiles: {
+                          objective: current_user.runner_profile.objective
+                        })
 
-    # 2. Application des filtres sélectionnés
-    filtered_matches = base_matches.map do |user|
-      # Calcul des scores pour chaque critère
-      pace_score = pace_compatibility(user)
-      distance_score = distance_compatibility(user)
-      availability_score = availability_compatibility(user)
-
-      # Vérification des filtres actifs
-      matches_pace = !@filters[:filter_pace] || pace_score >= 10
-      matches_distance = !@filters[:filter_distance] || distance_score >= 10
-      matches_availability = !@filters[:filter_availability] || availability_score >= 10
-
-      # Si l'utilisateur passe tous les filtres actifs
-      if matches_pace && matches_distance && matches_availability
-        {
-          user: user.as_json(only: [:id, :name, :location, :profile_image, :bio],
-                            include: {
-                              runner_profile: {
-                                only: [:actual_pace, :usual_distance, :availability, :objective]
-                              }
-                            }),
-          compatibility_details: {
-            pace_match: pace_score,
-            distance_match: distance_score,
-            availability_match: availability_score
-          },
-          score: calculate_compatibility_score(user),
-          filters_matched: {
-            pace: matches_pace,
-            distance: matches_distance,
-            availability: matches_availability
-          }
-        }
-      end
-    end.compact
+    # 2. Préparation des matches avec leurs scores (sans filtrage)
+    matches_with_details = @base_matches.map do |user|
+      {
+        user: user.as_json(only: [:id, :name, :location, :profile_image, :bio],
+                          include: {
+                            runner_profile: {
+                              only: [:actual_pace, :usual_distance, :availability, :objective]
+                            }
+                          }),
+        compatibility_details: {
+          pace_match: pace_compatibility(user),
+          distance_match: distance_compatibility(user),
+          availability_match: availability_compatibility(user)
+        },
+        score: calculate_total_score({
+          pace_match: pace_compatibility(user),
+          distance_match: distance_compatibility(user),
+          availability_match: availability_compatibility(user)
+        })
+      }
+    end
 
     render json: {
-      matches: filtered_matches,
-      total: filtered_matches.size,
+      matches: matches_with_details,
+      total: matches_with_details.size
+    }
+  end
+
+  # 2. Nouvel endpoint pour appliquer les filtres
+  def apply_filters
+    puts "\n==== DÉBUT APPLY_FILTERS ===="
+    puts "Paramètres reçus: #{params.inspect}"
+
+    # Utiliser la location du filtre si présente, sinon utiliser la location du profil
+    location_filter = params.dig(:filters, :location) || current_user.location
+    puts "Location utilisée: #{location_filter}"
+
+    # Récupérer les matches de base UNIQUEMENT avec la location_filter
+    @base_matches = User.joins(:runner_profile)
+                        .where.not(id: current_user.id)
+                        .where(location: location_filter)  # Une seule condition de location
+                        .where(runner_profiles: {
+                          objective: current_user.runner_profile.objective
+                        })
+
+    puts "\nMatches de base avec location #{location_filter}:"
+    puts "Nombre: #{@base_matches.count}"
+
+    # Appliquer les autres filtres (SANS refiltrer la location)
+    if params[:filters].present?
+      puts "\nApplication des filtres démographiques..."
+
+      if params[:filters][:age_min].present?
+        @base_matches = @base_matches.where("age >= ?", params[:filters][:age_min])
+        puts "Après filtre age_min (#{params[:filters][:age_min]}): #{@base_matches.count} matches"
+      end
+
+      if params[:filters][:age_max].present?
+        @base_matches = @base_matches.where("age <= ?", params[:filters][:age_max])
+        puts "Après filtre age_max (#{params[:filters][:age_max]}): #{@base_matches.count} matches"
+      end
+
+      if params[:filters][:gender].present?
+        @base_matches = @base_matches.where(gender: params[:filters][:gender])
+        puts "Après filtre gender (#{params[:filters][:gender]}): #{@base_matches.count} matches"
+      end
+    end
+
+    # Calcul des scores
+    @matches_with_scores = @base_matches.map do |user|
+      puts "Calcul des scores pour user #{user.id} (#{user.name})"
+      {
+        user: user.as_json(only: [:id, :name, :location, :profile_image, :bio],
+                          include: {
+                            runner_profile: {
+                              only: [:actual_pace, :usual_distance, :availability, :objective]
+                            }
+                          }),
+        compatibility_details: {
+          pace_match: pace_compatibility(user),
+          distance_match: distance_compatibility(user),
+          availability_match: availability_compatibility(user)
+        }
+      }
+    end
+
+    puts "==== FIN APPLY_FILTERS ===="
+
+    # Application des filtres
+    @filtered_matches = @matches_with_scores.select do |match|
+      passes_filters = true
+
+      if params[:filter_pace] == 'true'
+        passes_filters &= match[:compatibility_details][:pace_match] >= 10
+      end
+
+      if params[:filter_distance] == 'true'
+        passes_filters &= match[:compatibility_details][:distance_match] >= 10
+      end
+
+      if params[:filter_availability] == 'true'
+        passes_filters &= match[:compatibility_details][:availability_match] >= 10
+      end
+
+      passes_filters
+    end
+
+    # Ajout des scores finaux
+    final_matches = @filtered_matches.map do |match|
+      match.merge(
+        score: calculate_total_score(match[:compatibility_details]),
+        filters_matched: {
+          pace: match[:compatibility_details][:pace_match] >= 10,
+          distance: match[:compatibility_details][:distance_match] >= 10,
+          availability: match[:compatibility_details][:availability_match] >= 10
+        }
+      )
+    end
+
+    render json: {
+      matches: final_matches,
+      total: final_matches.size,
       stats: {
-        total_base_matches: base_matches.size,
-        filtered_matches: filtered_matches.size
+        total_base_matches: @base_matches.size,
+        filtered_matches: final_matches.size,
+        filter_stats: {
+          pace: count_matches_by_filter(:pace_match),
+          distance: count_matches_by_filter(:distance_match),
+          availability: count_matches_by_filter(:availability_match)
+        }
       }
     }
   end
 
   private
 
-  def calculate_compatibility_score(other_user)
-    pace_score = pace_compatibility(other_user)
-    distance_score = distance_compatibility(other_user)
-    availability_score = availability_compatibility(other_user)
+  def calculate_total_score(compatibility_details)
+    (
+      compatibility_details[:pace_match] * 0.4 +
+      compatibility_details[:distance_match] * 0.3 +
+      compatibility_details[:availability_match] * 0.3
+    ).round
+  end
 
-    # Pondération des scores
-    (pace_score * 0.4 + distance_score * 0.3 + availability_score * 0.3).round
+  def count_matches_by_filter(filter_type)
+    @matches_with_scores.count { |m| m[:compatibility_details][filter_type] >= 10 }
   end
 
   def pace_compatibility(other_user)
