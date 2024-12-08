@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_23_161026) do
+ActiveRecord::Schema[7.0].define(version: 2024_12_08_210905) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -20,6 +20,8 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_23_161026) do
     t.integer "recipient_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "read", default: false
+    t.index ["read"], name: "index_messages_on_read"
     t.index ["recipient_id"], name: "index_messages_on_recipient_id"
     t.index ["sender_id"], name: "index_messages_on_sender_id"
   end
@@ -35,18 +37,18 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_23_161026) do
     t.index ["user_id"], name: "index_runner_profiles_on_user_id"
   end
 
-  # create_table "running_preferences", force: :cascade do |t|
-  #   t.bigint "user_id", null: false
-  #   t.string "pace"
-  #   t.integer "distance"
-  #   t.string "availability"
-  #   t.string "level"
-  #   t.string "preferred_gender"
-  #   t.json "age_range"
-  #   t.datetime "created_at", null: false
-  #   t.datetime "updated_at", null: false
-  #   t.index ["user_id"], name: "index_running_preferences_on_user_id"
-  # end
+  create_table "running_preferences", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "pace"
+    t.integer "distance"
+    t.string "availability"
+    t.string "level"
+    t.string "preferred_gender"
+    t.json "age_range"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_running_preferences_on_user_id"
+  end
 
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false

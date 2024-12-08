@@ -1,5 +1,9 @@
 Rails.application.routes.draw do
   namespace :api do
+    get 'messages/index'
+    get 'messages/show'
+    get 'messages/update'
+    get 'messages/create'
     get 'users/show'
     get 'users/update'
   end
@@ -24,7 +28,7 @@ Rails.application.routes.draw do
       end
 
       # Autres ressources API
-      resources :messages, only: [:index, :show, :update, :destroy]
+      resources :messages, only: [:index, :show, :update, :destroy, :create]
       resources :users, only: [:index, :show, :update, :destroy]
       resource :runner_profile, only: [:create, :update]
       resources :matches, only: [:index] do
