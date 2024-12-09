@@ -47,9 +47,18 @@ class Api::MessagesController < ApplicationController
     end
   end
 
+  def update
+    @message = Message.find(params[:id])
+    if @message.update(message_params)
+      render json: @message
+    else
+      render json: { errors: @message.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def message_params
-    params.require(:message).permit(:content, :recipient_id)
+    params.require(:message).permit(:content, :recipient_id, :read)
   end
 end
