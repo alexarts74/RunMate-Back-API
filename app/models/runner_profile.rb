@@ -16,7 +16,7 @@ class RunnerProfile < ApplicationRecord
   validates :usual_distance, presence: true
   validates :availability, presence: true
   validates :objective, inclusion: {
-    in: OBJECTIVES.values,
+    in: OBJECTIVES.keys.map(&:to_s),
     message: "n'est pas un objectif valide"
   }
 
@@ -26,6 +26,6 @@ class RunnerProfile < ApplicationRecord
 
   def standardize_objective
     return unless objective
-    self.objective = OBJECTIVES[objective] || objective
+    self.objective = objective.to_s
   end
 end

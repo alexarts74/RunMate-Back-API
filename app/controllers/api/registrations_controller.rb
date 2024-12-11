@@ -32,7 +32,7 @@ class Api::RegistrationsController < Devise::RegistrationsController
         render json: { error: "Erreur lors de la suppression du compte: #{e.message}" }, status: :unprocessable_entity
       end
     end
-    
+
     private
 
     def authenticate_user_from_token!
@@ -51,7 +51,7 @@ class Api::RegistrationsController < Devise::RegistrationsController
           :email,
           :password,
           :password_confirmation,
-          :name,
+          :first_name,
           :last_name,
           :bio,
           :age,

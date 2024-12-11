@@ -10,7 +10,7 @@ class User < ApplicationRecord
   has_one :runner_profile, dependent: :destroy
   # has_one :running_preference, dependent: :destroy
 
-    validates :name, presence: true
+    validates :first_name, presence: true
     validates :last_name, presence: true
     validates :email, presence: true,
                       uniqueness: true,

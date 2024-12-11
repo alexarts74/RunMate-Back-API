@@ -31,7 +31,7 @@ class ApplicationController < ActionController::API
   def configure_permitted_parameters
     if params[:user].present?
       devise_parameter_sanitizer.permit(:sign_up, keys: [
-        :name,
+        :first_name,
         :last_name,
         :bio,
         :age,
@@ -42,7 +42,7 @@ class ApplicationController < ActionController::API
       ])
 
       devise_parameter_sanitizer.permit(:account_update, keys: [
-        :name,
+        :first_name,
         :last_name,
         :bio,
         :age,

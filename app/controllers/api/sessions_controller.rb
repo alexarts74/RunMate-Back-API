@@ -12,9 +12,6 @@ class Api::SessionsController < Devise::SessionsController
 
     def destroy
         if current_user
-          Rails.logger.info "=== LOGOUT DEBUG ==="
-          Rails.logger.info "User: #{current_user.email}"
-          Rails.logger.info "Token: [FILTERED]"
           current_user.update(authentication_token: nil)
           sign_out current_user
           render json: { message: "Déconnexion réussie" }, status: :ok

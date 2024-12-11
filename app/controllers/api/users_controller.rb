@@ -30,7 +30,7 @@ class Api::UsersController < ApplicationController
 
   def user_with_profile_json
     current_user.as_json(
-      only: [:id, :email, :name, :last_name, :age, :gender, :location, :bio, :profile_image],
+      only: [:id, :email, :first_name, :last_name, :age, :gender, :location, :bio, :profile_image],
       include: {
         runner_profile: {
           only: [:actual_pace, :usual_distance, :availability, :objective]
@@ -42,7 +42,7 @@ class Api::UsersController < ApplicationController
   def user_params
     params.require(:user).permit(
       :email,
-      :name,
+      :first_name,
       :last_name,
       :age,
       :gender,

@@ -30,7 +30,7 @@ Rails.application.routes.draw do
       # Autres ressources API
       resources :messages, only: [:index, :show, :update, :destroy, :create]
       resources :users, only: [:index, :show, :update, :destroy]
-      resource :runner_profile, only: [:create, :update]
+      resources :runner_profiles, only: [:create, :update]
       resources :matches, only: [:index] do
         collection do
           post 'apply_filters'

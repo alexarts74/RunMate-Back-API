@@ -13,7 +13,7 @@ class Api::MatchesController < ApplicationController
     # 2. Préparation des matches avec leurs scores (sans filtrage)
     matches_with_details = @base_matches.map do |user|
       {
-        user: user.as_json(only: [:id, :name, :location, :profile_image, :bio],
+        user: user.as_json(only: [:id, :first_name, :location, :profile_image, :bio],
                           include: {
                             runner_profile: {
                               only: [:actual_pace, :usual_distance, :availability, :objective]
@@ -82,7 +82,7 @@ class Api::MatchesController < ApplicationController
     @matches_with_scores = @base_matches.map do |user|
       puts "Calcul des scores pour user #{user.id} (#{user.name})"
       {
-        user: user.as_json(only: [:id, :name, :location, :profile_image, :bio],
+        user: user.as_json(only: [:id, :first_name, :location, :profile_image, :bio],
                           include: {
                             runner_profile: {
                               only: [:actual_pace, :usual_distance, :availability, :objective]

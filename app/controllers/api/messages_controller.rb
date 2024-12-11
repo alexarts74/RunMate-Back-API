@@ -12,7 +12,7 @@ class Api::MessagesController < ApplicationController
                             user = User.find(user_id)
                             unread_count = Message.where(sender_id: user_id, recipient_id: current_user.id, read: false).count
                             {
-                              user: user.as_json(only: [:id, :name, :profile_image]),
+                              user: user.as_json(only: [:id, :first_name, :profile_image]),
                               unread_messages: unread_count,
                               last_message: Message.conversation_between(current_user.id, user_id).last
                             }
@@ -30,7 +30,7 @@ class Api::MessagesController < ApplicationController
     messages.where(recipient_id: current_user.id, read: false).update_all(read: true)
 
     render json: {
-      other_user: other_user.as_json(only: [:id, :name, :profile_image]),
+      other_user: other_user.as_json(only: [:id, :first_name, :profile_image]),
       messages: messages.as_json(methods: :read)
     }
   end
