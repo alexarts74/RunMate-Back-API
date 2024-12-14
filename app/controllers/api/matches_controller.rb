@@ -2,6 +2,16 @@ class Api::MatchesController < ApplicationController
   before_action :authenticate_user_from_token!
 
   def index
+    puts "\n=== DEBUG MATCHES ==="
+    puts "Current user ID: #{current_user.id}"
+    puts "Location: #{current_user.location}"
+    puts "Objective: #{current_user.runner_profile.objective}"
+
+    paris_users = User.where(location: "Paris").joins(:runner_profile)
+    puts "\nTous les profils à Paris:"
+    paris_users.each do |user|
+      puts "- User #{user.id}: objective=#{user.runner_profile.objective}"
+    end
     # 1. Base matches (critères fondamentaux)
     @base_matches = User.joins(:runner_profile)
                         .where.not(id: current_user.id)
@@ -165,6 +175,8 @@ class Api::MatchesController < ApplicationController
     my_pace = parse_pace(current_user.runner_profile.actual_pace)
     other_pace = parse_pace(other_user.runner_profile.actual_pace)
 
+    return 0 if my_pace.nil? || other_pace.nil?
+
     diff = (my_pace - other_pace).abs
     case diff
     when 0..30    then 20
@@ -205,8 +217,13 @@ class Api::MatchesController < ApplicationController
   end
 
   def parse_pace(pace_string)
-    return 0 unless pace_string.present?
-    minutes, seconds = pace_string.split(':').map(&:to_i)
-    minutes * 60 + seconds
+    return nil unless pace_string.present? && pace_string.include?(':')
+
+    begin
+      minutes, seconds = pace_string.split(':').map(&:to_i)
+      minutes * 60 + seconds
+    rescue
+      nil
+    end
   end
 end

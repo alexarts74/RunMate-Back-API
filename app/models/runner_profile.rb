@@ -1,22 +1,22 @@
 class RunnerProfile < ApplicationRecord
   belongs_to :user
 
-  OBJECTIVES = {
-    '5km_sous_25min': '5km sous 25min',
-    '10km_sous_50min': '10km sous 50min',
-    'premier_semi_marathon': 'Premier semi-marathon',
-    'premier_marathon': 'Premier marathon',
-    'preparation_trail': 'Préparation trail',
-    'ameliorer_endurance': 'Améliorer son endurance',
-    'perdre_du_poids': 'Perdre du poids',
-    'course_reguliere': 'Course régulière'
-  }.freeze
+  OBJECTIVES = [
+    '5km_sous_25min',
+    '10km_sous_50min',
+    'premier_semi_marathon',
+    'premier_marathon',
+    'preparation_trail',
+    'ameliorer_endurance',
+    'perdre_du_poids',
+    'course_reguliere'
+  ].freeze
 
   validates :actual_pace, presence: true
   validates :usual_distance, presence: true
   validates :availability, presence: true
   validates :objective, inclusion: {
-    in: OBJECTIVES.keys.map(&:to_s),
+    in: OBJECTIVES,
     message: "n'est pas un objectif valide"
   }
 

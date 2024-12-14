@@ -12,13 +12,13 @@ OBJECTIVES = RunnerProfile::OBJECTIVES
 puts "Creating users and their runner profiles..."
 
 # Assurer une meilleure distribution des objectifs
-OBJECTIVES.values.each do |objective|
+OBJECTIVES.each do |objective|
   CITIES.each do |city|
     3.times do
       user = User.create!(
         email: Faker::Internet.unique.email,
-        password: "toto",
-        name: Faker::Name.first_name,
+        password: "password",
+        first_name: Faker::Name.first_name,
         last_name: Faker::Name.last_name,
         age: rand(18..60),
         gender: ["male", "female"].sample,
