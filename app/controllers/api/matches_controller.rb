@@ -2,11 +2,6 @@ class Api::MatchesController < ApplicationController
   before_action :authenticate_user_from_token!
 
   def index
-    puts "\n=== DEBUG MATCHES ==="
-    puts "Current user ID: #{current_user.id}"
-    puts "Location: #{current_user.location}"
-    puts "Objective: #{current_user.runner_profile.objective}"
-
     paris_users = User.where(location: "Paris").joins(:runner_profile)
     puts "\nTous les profils à Paris:"
     paris_users.each do |user|

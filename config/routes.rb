@@ -25,6 +25,7 @@ Rails.application.routes.draw do
         # Profil utilisateur
         get 'users/profile', to: 'users#show'
         put 'users/profile', to: 'users#update'
+        get 'users/current', to: 'users#current'
       end
 
       # Autres ressources API

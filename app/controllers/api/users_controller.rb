@@ -26,6 +26,16 @@ class Api::UsersController < ApplicationController
     end
   end
 
+  def current
+    if current_user
+      Rails.logger.debug "=== RESPONSE DATA ==="
+      Rails.logger.debug current_user.inspect
+      render json: current_user, include: :runner_profile
+    else
+      render json: { error: "Utilisateur non authentifié" }, status: :unauthorized
+    end
+  end
+
   private
 
   def user_with_profile_json
