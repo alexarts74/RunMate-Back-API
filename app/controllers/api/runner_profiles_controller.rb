@@ -2,10 +2,7 @@ class Api::RunnerProfilesController < ApplicationController
   before_action :authenticate_user_from_token!
 
   def create
-    puts "je suis dans le create"
-    Rails.logger.info "Paramètres reçus : #{params.inspect}"
     profile = current_user.build_runner_profile(runner_profile_params)
-    Rails.logger.info "Profil créé : #{profile.inspect}"
     if profile.save
       render json: {
         message: "Profil coureur créé avec succès",
