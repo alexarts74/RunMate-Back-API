@@ -85,7 +85,7 @@ class Api::MatchesController < ApplicationController
 
     # Calcul des scores
     @matches_with_scores = @base_matches.map do |user|
-      puts "Calcul des scores pour user #{user.id} (#{user.name})"
+      puts "Calcul des scores pour user #{user.id} (#{user.first_name} #{user.last_name})"
       {
         user: user.as_json(only: [:id, :first_name, :location, :profile_image, :bio],
                           include: {
