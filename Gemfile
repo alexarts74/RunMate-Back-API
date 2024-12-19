@@ -87,3 +87,5 @@ group :test do
   gem "selenium-webdriver"
 
 end
+
+gem "http", "~> 5.2"

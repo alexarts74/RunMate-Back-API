@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_12_14_142816) do
+ActiveRecord::Schema[7.0].define(version: 2024_12_18_230855) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -24,6 +24,20 @@ ActiveRecord::Schema[7.0].define(version: 2024_12_14_142816) do
     t.index ["read"], name: "index_messages_on_read"
     t.index ["recipient_id"], name: "index_messages_on_recipient_id"
     t.index ["sender_id"], name: "index_messages_on_sender_id"
+  end
+
+  create_table "notifications", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "title"
+    t.string "body"
+    t.boolean "read"
+    t.integer "notification_type"
+    t.jsonb "data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["notification_type"], name: "index_notifications_on_notification_type"
+    t.index ["read"], name: "index_notifications_on_read"
+    t.index ["user_id"], name: "index_notifications_on_user_id"
   end
 
   create_table "runner_profiles", force: :cascade do |t|
@@ -66,6 +80,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_12_14_142816) do
     t.string "authentication_token"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "expo_push_token"
     t.index ["authentication_token"], name: "index_users_on_authentication_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -73,6 +88,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_12_14_142816) do
 
   add_foreign_key "messages", "users", column: "recipient_id"
   add_foreign_key "messages", "users", column: "sender_id"
+  add_foreign_key "notifications", "users"
   add_foreign_key "runner_profiles", "users"
   add_foreign_key "running_preferences", "users"
 end

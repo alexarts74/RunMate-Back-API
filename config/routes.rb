@@ -1,41 +1,48 @@
 Rails.application.routes.draw do
+  # Configuration de Devise
+  devise_for :users, controllers: {
+    sessions: 'api/sessions',
+    registrations: 'api/registrations'
+  }
+
+  # Toutes les routes API
   namespace :api do
-    get 'messages/index'
-    get 'messages/show'
-    get 'messages/update'
-    get 'messages/create'
-    get 'users/show'
-    get 'users/update'
-  end
-    devise_for :users, controllers: {
-      sessions: 'api/sessions',
-      registrations: 'api/registrations'
-    }
+    devise_scope :user do
+      # Authentification
+      post 'users/log_in', to: 'sessions#create'
+      delete 'users/log_out', to: 'sessions#destroy'
 
-    namespace :api do
-      devise_scope :user do
-        # Authentification
-        post 'users/log_in', to: 'sessions#create'
-        delete 'users/log_out', to: 'sessions#destroy'
+      # Gestion du compte
+      post 'users/sign_up', to: 'registrations#create'
+      delete 'users/sign_out', to: 'registrations#destroy'
 
-        # Gestion du compte
-        post 'users/sign_up', to: 'registrations#create'
-        delete 'users/sign_out', to: 'registrations#destroy'  # Suppression du compte via Devise
+      # Profil utilisateur
+      get 'users/profile', to: 'users#show'
+      put 'users/profile', to: 'users#update'
+      get 'users/current', to: 'users#current'
+      put 'users/update_push_token', to: 'users#update_push_token'
+    end
 
-        # Profil utilisateur
-        get 'users/profile', to: 'users#show'
-        put 'users/profile', to: 'users#update'
-        get 'users/current', to: 'users#current'
-      end
+    # Resources standards
+    resources :messages, only: [:index, :show, :update, :create, :destroy]
+    resources :users, only: [:index, :show, :update, :destroy]
+    resources :runner_profiles, only: [:create, :update]
 
-      # Autres ressources API
-      resources :messages, only: [:index, :show, :update, :destroy, :create]
-      resources :users, only: [:index, :show, :update, :destroy]
-      resources :runner_profiles, only: [:create, :update]
-      resources :matches, only: [:index] do
-        collection do
-          post 'apply_filters'
-        end
+    resources :matches, only: [:index] do
+      collection do
+        post 'apply_filters'
       end
     end
+
+    resources :notifications, only: [:index] do
+      member do
+        put :mark_as_read
+      end
+      collection do
+        put :mark_all_as_read
+        get :test
+        post :test
+      end
+    end
+  end
 end

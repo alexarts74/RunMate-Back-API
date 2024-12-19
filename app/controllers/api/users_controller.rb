@@ -36,6 +36,15 @@ class Api::UsersController < ApplicationController
     end
   end
 
+  def update_push_token
+    if current_user.update(expo_push_token: params[:expo_push_token])
+      render json: { message: "Token mis à jour avec succès" }
+    else
+      render json: { error: "Erreur lors de la mise à jour du token" },
+             status: :unprocessable_entity
+    end
+  end
+
   private
 
   def user_with_profile_json

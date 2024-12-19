@@ -41,6 +41,19 @@ class Api::MessagesController < ApplicationController
     message.read = false
 
     if message.save
+      NotificationService.create_notification(
+        message.recipient,
+        :new_message,
+        "Nouveau message",
+        "#{current_user.first_name} vous a envoyé un message",
+        {
+          message_id: message.id,
+          sender_id: current_user.id,
+          sender_name: current_user.first_name,
+          sender_image: current_user.profile_image,
+          conversation_id: message.recipient_id
+        }
+      )
       render json: message, status: :created
     else
       render json: { errors: message.errors.full_messages }, status: :unprocessable_entity
