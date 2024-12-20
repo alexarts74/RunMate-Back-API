@@ -2,46 +2,54 @@ class Api::MatchesController < ApplicationController
   before_action :authenticate_user_from_token!
 
   def index
-    paris_users = User.where(location: "Paris").joins(:runner_profile)
-    puts "\nTous les profils à Paris:"
-    paris_users.each do |user|
-      puts "- User #{user.id}: objective=#{user.runner_profile.objective}"
-    end
-    # 1. Base matches (critères fondamentaux)
-    @base_matches = User.joins(:runner_profile)
-                        .where.not(id: current_user.id)
-                        .where(location: current_user.location)
-                        .where(runner_profiles: {
-                          objective: current_user.runner_profile.objective
-                        })
+  # 1. Base matches avec eager loading
+  @base_matches = User.includes(:runner_profile)
+                      .where.not(id: current_user.id)
+                      .where(location: current_user.location)
+                      .where(runner_profiles: {
+                        objective: current_user.runner_profile.objective
+                      })
 
-    # 2. Préparation des matches avec leurs scores (sans filtrage)
-    matches_with_details = @base_matches.map do |user|
-      {
-        user: user.as_json(only: [:id, :first_name, :location, :profile_image, :bio],
-                          include: {
-                            runner_profile: {
-                              only: [:actual_pace, :usual_distance, :availability, :objective]
-                            }
-                          }),
-        compatibility_details: {
-          pace_match: pace_compatibility(user),
-          distance_match: distance_compatibility(user),
-          availability_match: availability_compatibility(user)
-        },
-        score: calculate_total_score({
-          pace_match: pace_compatibility(user),
-          distance_match: distance_compatibility(user),
-          availability_match: availability_compatibility(user)
-        })
-      }
-    end
+  # 2. Préparation des matches avec leurs scores
+  matches_with_details = @base_matches.map do |user|
+    # Cache les calculs de compatibilité pour éviter les calculs répétés
+    pace_match = pace_compatibility(user)
+    distance_match = distance_compatibility(user)
+    availability_match = availability_compatibility(user)
 
-    render json: {
-      matches: matches_with_details,
-      total: matches_with_details.size
+    {
+      user: user.as_json(
+        only: [:id, :first_name, :location, :profile_image, :bio],
+        include: {
+          runner_profile: {
+            only: [:actual_pace, :usual_distance, :availability, :objective]
+          }
+        }
+      ),
+      compatibility_details: {
+        pace_match: pace_match,
+        distance_match: distance_match,
+        availability_match: availability_match
+      },
+      score: calculate_total_score({
+        pace_match: pace_match,
+        distance_match: distance_match,
+        availability_match: availability_match
+      })
     }
   end
+
+  # Option: Ajouter du caching si nécessaire
+  # matches_cache_key = "matches_for_user_#{current_user.id}"
+  # matches_with_details = Rails.cache.fetch(matches_cache_key, expires_in: 5.minutes) do
+  #   matches_with_details
+  # end
+
+  render json: {
+    matches: matches_with_details,
+    total: matches_with_details.size
+  }
+end
 
   # 2. Nouvel endpoint pour appliquer les filtres
   def apply_filters

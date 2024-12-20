@@ -3,23 +3,36 @@ class Api::MessagesController < ApplicationController
 
   # Obtenir toutes les conversations de l'utilisateur
   def index
-    conversations = Message.where("sender_id = ? OR recipient_id = ?", current_user.id, current_user.id)
+  # Récupérer les IDs des conversations avec eager loading
+  conversation_ids = Message.includes(:sender, :recipient)
+                          .where("sender_id = ? OR recipient_id = ?", current_user.id, current_user.id)
                           .select(:sender_id, :recipient_id)
                           .distinct
                           .map { |m| [m.sender_id, m.recipient_id].reject { |id| id == current_user.id }.first }
                           .uniq
-                          .map do |user_id|
-                            user = User.find(user_id)
-                            unread_count = Message.where(sender_id: user_id, recipient_id: current_user.id, read: false).count
-                            {
-                              user: user.as_json(only: [:id, :first_name, :profile_image]),
-                              unread_messages: unread_count,
-                              last_message: Message.conversation_between(current_user.id, user_id).last
-                            }
-                          end
 
-    render json: conversations
+  # Charger tous les utilisateurs et messages non lus en une seule fois
+  users = User.where(id: conversation_ids).index_by(&:id)
+  unread_counts = Message.where(sender_id: conversation_ids, recipient_id: current_user.id, read: false)
+                        .group(:sender_id)
+                        .count
+  last_messages = Message.where("(sender_id = ? AND recipient_id IN (?)) OR (sender_id IN (?) AND recipient_id = ?)",
+                              current_user.id, conversation_ids,
+                              conversation_ids, current_user.id)
+                        .order(created_at: :desc)
+                        .group_by { |m| [m.sender_id, m.recipient_id].reject { |id| id == current_user.id }.first }
+                        .transform_values(&:first)
+
+  conversations = conversation_ids.map do |user_id|
+    {
+      user: users[user_id].as_json(only: [:id, :first_name, :profile_image]),
+      unread_messages: unread_counts[user_id] || 0,
+      last_message: last_messages[user_id]
+    }
   end
+
+  render json: conversations
+end
 
   # Obtenir les messages d'une conversation spécifique
   def show
@@ -41,18 +54,10 @@ class Api::MessagesController < ApplicationController
     message.read = false
 
     if message.save
-      NotificationService.create_notification(
+      ::NotificationService.send_message_notification(
         message.recipient,
-        :new_message,
-        "Nouveau message",
-        "#{current_user.first_name} vous a envoyé un message",
-        {
-          message_id: message.id,
-          sender_id: current_user.id,
-          sender_name: current_user.first_name,
-          sender_image: current_user.profile_image,
-          conversation_id: message.recipient_id
-        }
+        message.sender,
+        message.content
       )
       render json: message, status: :created
     else

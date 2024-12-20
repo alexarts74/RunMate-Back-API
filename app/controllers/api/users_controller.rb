@@ -7,6 +7,8 @@ class Api::UsersController < ApplicationController
   end
 
   def update
+
+
     # Désactiver la validation du mot de passe si non fourni
     current_user.skip_password_validation = true if params[:user][:password].blank?
     current_user.skip_password_validation = true if params[:user][:password_confirmation].blank?
@@ -28,8 +30,6 @@ class Api::UsersController < ApplicationController
 
   def current
     if current_user
-      Rails.logger.debug "=== RESPONSE DATA ==="
-      Rails.logger.debug current_user.inspect
       render json: current_user, include: :runner_profile
     else
       render json: { error: "Utilisateur non authentifié" }, status: :unauthorized
@@ -37,11 +37,17 @@ class Api::UsersController < ApplicationController
   end
 
   def update_push_token
+    current_user.skip_password_validation = true if params[:user][:password].blank?
+    current_user.skip_password_validation = true if params[:user][:password_confirmation].blank?
     if current_user.update(expo_push_token: params[:expo_push_token])
-      render json: { message: "Token mis à jour avec succès" }
+      render json: {
+        message: "Token mis à jour avec succès",
+        user: current_user.as_json(only: [:id, :expo_push_token])
+      }
     else
-      render json: { error: "Erreur lors de la mise à jour du token" },
-             status: :unprocessable_entity
+      render json: {
+        error: "Erreur lors de la mise à jour du token"
+      }, status: :unprocessable_entity
     end
   end
 
@@ -67,7 +73,8 @@ class Api::UsersController < ApplicationController
       :gender,
       :location,
       :bio,
-      :profile_image
+      :profile_image,
+      :expo_push_token
     )
   end
 

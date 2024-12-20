@@ -1,7 +1,7 @@
 class User < ApplicationRecord
   attr_accessor :skip_password_validation
-  # Include default devise modules. Others available are:
-  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  attr_accessor :expo_push_token
+
 
   devise :database_authenticatable, :registerable,
         :recoverable, :rememberable, :validatable
@@ -10,7 +10,6 @@ class User < ApplicationRecord
   has_one :runner_profile, dependent: :destroy
   has_many :notifications, dependent: :destroy
 
-  # has_one :running_preference, dependent: :destroy
 
     validates :first_name, presence: true
     validates :last_name, presence: true
