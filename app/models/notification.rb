@@ -2,11 +2,10 @@ class Notification < ApplicationRecord
   belongs_to :user
 
   enum notification_type: {
-    new_match: 0,
-    new_message: 1,
-    match_accepted: 2,
-    running_reminder: 3
-  }
+    message: 'message',
+    match: 'match',
+    run_invitation: 'run_invitation'
+  }, _prefix: true
 
   validates :title, presence: true
   validates :body, presence: true

@@ -1,6 +1,6 @@
 class User < ApplicationRecord
   attr_accessor :skip_password_validation
-  attr_accessor :expo_push_token
+  # attr_accessor :expo_push_token
 
 
   devise :database_authenticatable, :registerable,
