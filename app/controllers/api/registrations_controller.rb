@@ -7,8 +7,7 @@ class Api::RegistrationsController < Devise::RegistrationsController
 
     def create
         build_resource(sign_up_params)
-        Rails.logger.info "Paramètres reçus : #{params.inspect}"
-        Rails.logger.info "Erreurs de validation : #{resource.errors.full_messages}" unless resource.valid?
+        resource.country = "France"
 
         if resource.save
             sign_up(resource_name, resource) if resource.active_for_authentication?
@@ -57,7 +56,13 @@ class Api::RegistrationsController < Devise::RegistrationsController
           :age,
           :profile_image,
           :gender,
-          :location
+          :city,
+          :department,
+          :country,
+          :latitude,
+          :longitude,
+          :location,
+          :postcode
         )
     end
 end
