@@ -46,7 +46,7 @@ class Api::MatchesController < ApplicationController
   end
 
   def apply_filters
-    distance_km = params.dig(:filters, :distance_km)&.to_i || 20
+    distance_km = params.dig(:filters, :distance)&.to_i || 20
 
     @base_matches = User.includes(:runner_profile)
                         .where.not(id: current_user.id)
