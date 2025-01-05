@@ -44,5 +44,19 @@ Rails.application.routes.draw do
         post :test
       end
     end
+
+    resources :running_groups do
+      member do
+        post :join
+        delete :leave
+      end
+
+      resources :group_events do
+        member do
+          post :join
+          delete :leave
+        end
+      end
+    end
   end
 end

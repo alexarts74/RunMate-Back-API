@@ -10,9 +10,51 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_01_02_151554) do
+ActiveRecord::Schema[7.0].define(version: 2025_01_05_194012) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "event_participations", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "group_event_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["group_event_id"], name: "index_event_participations_on_group_event_id"
+    t.index ["user_id", "group_event_id"], name: "index_event_participations_on_user_id_and_group_event_id", unique: true
+    t.index ["user_id"], name: "index_event_participations_on_user_id"
+  end
+
+  create_table "group_events", force: :cascade do |t|
+    t.string "title"
+    t.datetime "date"
+    t.string "meeting_point"
+    t.float "distance"
+    t.string "pace"
+    t.bigint "running_group_id", null: false
+    t.bigint "creator_id"
+    t.float "latitude"
+    t.float "longitude"
+    t.text "description"
+    t.integer "max_participants"
+    t.integer "status", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_group_events_on_creator_id"
+    t.index ["date"], name: "index_group_events_on_date"
+    t.index ["running_group_id"], name: "index_group_events_on_running_group_id"
+    t.index ["status"], name: "index_group_events_on_status"
+  end
+
+  create_table "group_memberships", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "running_group_id", null: false
+    t.integer "role", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["running_group_id"], name: "index_group_memberships_on_running_group_id"
+    t.index ["user_id", "running_group_id"], name: "index_group_memberships_on_user_id_and_running_group_id", unique: true
+    t.index ["user_id"], name: "index_group_memberships_on_user_id"
+  end
 
   create_table "messages", force: :cascade do |t|
     t.text "content"
@@ -49,6 +91,26 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_02_151554) do
     t.datetime "updated_at", null: false
     t.string "objective"
     t.index ["user_id"], name: "index_runner_profiles_on_user_id"
+  end
+
+  create_table "running_groups", force: :cascade do |t|
+    t.string "name"
+    t.text "description"
+    t.integer "level"
+    t.integer "max_members"
+    t.string "location"
+    t.float "latitude"
+    t.float "longitude"
+    t.bigint "creator_id"
+    t.integer "status", default: 0
+    t.string "cover_image"
+    t.jsonb "weekly_schedule"
+    t.integer "members_count", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_running_groups_on_creator_id"
+    t.index ["level"], name: "index_running_groups_on_level"
+    t.index ["status"], name: "index_running_groups_on_status"
   end
 
   create_table "running_preferences", force: :cascade do |t|
@@ -92,9 +154,16 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_02_151554) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "event_participations", "group_events"
+  add_foreign_key "event_participations", "users"
+  add_foreign_key "group_events", "running_groups"
+  add_foreign_key "group_events", "users", column: "creator_id"
+  add_foreign_key "group_memberships", "running_groups"
+  add_foreign_key "group_memberships", "users"
   add_foreign_key "messages", "users", column: "recipient_id"
   add_foreign_key "messages", "users", column: "sender_id"
   add_foreign_key "notifications", "users"
   add_foreign_key "runner_profiles", "users"
+  add_foreign_key "running_groups", "users", column: "creator_id"
   add_foreign_key "running_preferences", "users"
 end
