@@ -3,6 +3,7 @@ class Api::RunningGroupsController < ApplicationController
   before_action :set_running_group, except: [:index, :create]
 
   def index
+    puts "HELLLOOOOOOOOOOOOOO"
     @groups = RunningGroup.includes(:creator, :members)
                           .near([current_user.latitude, current_user.longitude], 20)
                           .where(status: :active)

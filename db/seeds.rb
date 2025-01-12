@@ -1,7 +1,10 @@
 # Nettoyer la base de données
 puts "Cleaning database..."
+EventParticipation.destroy_all  # Supprimer d'abord les participations aux événements
+GroupEvent.destroy_all         # Puis les événements
+GroupMembership.destroy_all    # Puis les adhésions aux groupes
+RunningGroup.destroy_all       # Puis les groupes
 User.destroy_all
-RunnerProfile.destroy_all
 
 # Constantes pour plus de réalisme
 CITIES = [
@@ -117,3 +120,148 @@ puts "Created #{RunnerProfile.count} runner profiles!"
 puts "\nVérification des géolocalisations..."
 non_geocoded = User.where(latitude: nil).count
 puts "Utilisateurs sans géolocalisation : #{non_geocoded}"
+
+puts "\nCreating groups..."
+
+
+GROUP_TYPES = [
+  {
+    name: "Les Runners du Mont-Blanc",
+    description: "Groupe de trail et course en montagne",
+    level: :advanced
+  },
+  {
+    name: "Running Loisir Sallanches",
+    description: "Course à pied pour tous niveaux",
+    level: :intermediate
+  },
+  {
+    name: "Débutants Motivés",
+    description: "Groupe pour débuter la course à pied",
+    level: :beginner
+  }
+]
+
+GROUP_IMAGES = [
+  "https://images.unsplash.com/photo-1552674605-db6ffd4facb5", # Running en groupe
+  "https://images.unsplash.com/photo-1571008887538-b36bb32f4571", # Trail
+  "https://images.unsplash.com/photo-1486218119243-13883505764c", # Running urbain
+  "https://images.unsplash.com/photo-1571902943202-507ec2618e8f", # Course en montagne
+  "https://images.unsplash.com/photo-1549576490-b0b4831ef60a"  # Running au lever du soleil
+]
+
+EVENT_TYPES = [
+  {
+    title: "Sortie longue",
+    distance: 15,
+    pace: "6:00",
+    description: "Sortie endurance à allure modérée"
+  },
+  {
+    title: "Fractionné",
+    distance: 8,
+    pace: "4:30",
+    description: "Session d'entraînement intensive"
+  },
+  {
+    title: "Initiation Trail",
+    distance: 10,
+    pace: "7:00",
+    description: "Découverte des sentiers de montagne"
+  }
+]
+# Créer des groupes avec différents statuts
+GROUP_TYPES.each do |group_type|
+  CITIES.each do |city|
+    creator = User.all.sample
+    group = RunningGroup.create!(
+      name: "#{group_type[:name]} - #{city[:name]}",
+      description: group_type[:description],
+      level: group_type[:level],
+      max_members: rand(10..20),
+      location: "#{city[:name]}, Haute-Savoie",
+      creator: creator,
+      weekly_schedule: [
+        "Lundi 18:00",
+        "Mercredi 18:30",
+        "Samedi 9:00"
+      ].sample(2),
+      cover_image: GROUP_IMAGES.sample
+    )
+
+    # Ajouter des membres aléatoires
+    rand(5..15).times do
+      user = User.where.not(id: creator.id).sample
+      GroupMembership.create(
+        user: user,
+        running_group: group,
+        role: rand(10) == 0 ? :admin : :member
+      ) unless group.members.include?(user)
+    end
+
+    EVENT_TYPES.each do |event_type|
+      # Événements à venir
+      2.times do |i|
+        event = GroupEvent.create!(
+          running_group: group,
+          creator: group.members.sample,
+          title: "#{event_type[:title]} ##{i+1}",
+          date: Time.current + rand(1..30).days,
+          meeting_point: "#{city[:name]}, #{Faker::Address.street_address}",
+          distance: event_type[:distance],
+          pace: event_type[:pace],
+          description: event_type[:description],
+          max_participants: rand(5..15),
+          status: :scheduled
+        )
+
+        # Ajouter des participants
+        rand(3..10).times do
+          user = group.members.sample
+          EventParticipation.create(
+            user: user,
+            group_event: event
+          ) unless event.participants.include?(user)
+        end
+      end
+
+      1.times do
+        event = GroupEvent.create!(
+          running_group: group,
+          creator: group.members.sample,
+          title: "#{event_type[:title]} (Passé)",
+          date: Time.current - rand(1..30).days,
+          meeting_point: "#{city[:name]}, #{Faker::Address.street_address}",
+          distance: event_type[:distance],
+          pace: event_type[:pace],
+          description: event_type[:description],
+          max_participants: rand(5..15),
+          status: [:completed, :cancelled].sample
+        )
+
+        # Ajouter des participants aux événements passés
+        rand(3..10).times do
+          user = group.members.sample
+          EventParticipation.create(
+            user: user,
+            group_event: event
+          ) unless event.participants.include?(user)
+        end
+      end
+    end
+    print "."
+  end
+end
+
+puts "\nSeeding completed!"
+puts "Created #{User.count} users"
+puts "Created #{RunningGroup.count} groups"
+puts "Created #{GroupMembership.count} group memberships"
+puts "Created #{GroupEvent.count} events"
+puts "Created #{EventParticipation.count} event participations"
+
+# Vérifications finales
+puts "\nVérifications :"
+puts "Groupes pleins : #{RunningGroup.where(status: :full).count}"
+puts "Événements à venir : #{GroupEvent.upcoming.count}"
+puts "Événements passés : #{GroupEvent.past.count}"

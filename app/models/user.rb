@@ -8,6 +8,13 @@ class User < ApplicationRecord
     has_many :received_messages, class_name: 'Message', foreign_key: 'recipient_id', dependent: :destroy
     has_one :runner_profile, dependent: :destroy
     has_many :notifications, dependent: :destroy
+    has_many :created_groups, class_name: 'RunningGroup', foreign_key: 'creator_id'
+    has_many :group_memberships
+    has_many :running_groups, through: :group_memberships
+    has_many :created_events, class_name: 'GroupEvent', foreign_key: 'creator_id'
+    has_many :event_participations
+    has_many :group_events, through: :event_participations
+    
 
     geocoded_by :full_address
     after_validation :geocode, if: :should_geocode?
