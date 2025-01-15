@@ -53,7 +53,7 @@ class Api::RunningGroupsController < ApplicationController
   private
 
   def set_running_group
-    @running_group = RunningGroup.find(params[:id])
+    @running_group = RunningGroup.includes(:members, :group_memberships, :creator).find(params[:id])
   end
 
   def running_group_params
@@ -80,6 +80,13 @@ class Api::RunningGroupsController < ApplicationController
         name: group.creator.first_name,
         profile_image: group.creator.profile_image
       },
+      members: group.members.map { |member| {
+        id: member.id,
+        first_name: member.first_name,
+        last_name: member.last_name,
+        profile_image: member.profile_image,
+        is_admin: group.group_memberships.exists?(user: member, role: :admin)
+      }},
       is_member: group.members.include?(current_user),
       is_admin: group.group_memberships.exists?(user: current_user, role: :admin),
       upcoming_events: group.group_events.upcoming.limit(3)

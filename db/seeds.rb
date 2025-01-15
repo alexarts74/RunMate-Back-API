@@ -131,7 +131,7 @@ GROUP_TYPES = [
     level: :advanced
   },
   {
-    name: "Running Loisir Sallanches",
+    name: "Running Loisir",
     description: "Course à pied pour tous niveaux",
     level: :intermediate
   },
@@ -175,11 +175,11 @@ GROUP_TYPES.each do |group_type|
   CITIES.each do |city|
     creator = User.all.sample
     group = RunningGroup.create!(
-      name: "#{group_type[:name]} - #{city[:name]}",
+      name: group_type[:name],
       description: group_type[:description],
       level: group_type[:level],
       max_members: rand(10..20),
-      location: "#{city[:name]}, Haute-Savoie",
+      location: "#{city[:name]}, #{city[:department]}",
       creator: creator,
       weekly_schedule: [
         "Lundi 18:00",
