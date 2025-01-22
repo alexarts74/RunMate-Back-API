@@ -57,6 +57,13 @@ Rails.application.routes.draw do
           delete :leave
         end
       end
+
+      resources :messages, only: [] do
+        collection do
+          get :group_index
+          post :create_group_message
+        end
+      end
     end
   end
 end

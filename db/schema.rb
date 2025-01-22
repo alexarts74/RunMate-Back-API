@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_01_05_194012) do
+ActiveRecord::Schema[7.0].define(version: 2025_01_19_153610) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -59,12 +59,15 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_05_194012) do
   create_table "messages", force: :cascade do |t|
     t.text "content"
     t.integer "sender_id", null: false
-    t.integer "recipient_id", null: false
+    t.integer "recipient_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "read", default: false
+    t.bigint "running_group_id"
+    t.string "message_type", default: "direct"
     t.index ["read"], name: "index_messages_on_read"
     t.index ["recipient_id"], name: "index_messages_on_recipient_id"
+    t.index ["running_group_id"], name: "index_messages_on_running_group_id"
     t.index ["sender_id"], name: "index_messages_on_sender_id"
   end
 
@@ -160,6 +163,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_05_194012) do
   add_foreign_key "group_events", "users", column: "creator_id"
   add_foreign_key "group_memberships", "running_groups"
   add_foreign_key "group_memberships", "users"
+  add_foreign_key "messages", "running_groups"
   add_foreign_key "messages", "users", column: "recipient_id"
   add_foreign_key "messages", "users", column: "sender_id"
   add_foreign_key "notifications", "users"

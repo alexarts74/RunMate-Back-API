@@ -3,6 +3,7 @@ class RunningGroup < ApplicationRecord
   has_many :group_memberships, dependent: :destroy
   has_many :members, through: :group_memberships, source: :user
   has_many :group_events, dependent: :destroy
+  has_many :messages, dependent: :destroy
 
   validates :name, presence: true
   validates :description, presence: true
@@ -29,6 +30,10 @@ class RunningGroup < ApplicationRecord
 
   def full?
     members_count >= max_members
+  end
+
+  def member?(user)
+    members.include?(user)
   end
 
   private
