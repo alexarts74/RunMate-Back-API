@@ -45,24 +45,28 @@ Rails.application.routes.draw do
       end
     end
 
+    # Routes pour les groupes privés
     resources :running_groups do
+      member do
+        post :request_to_join
+        post :accept_request
+        delete :decline_request
+        get :pending_requests
+      end
+      collection do
+        get :search_users
+      end
+    end
+
+    # Routes pour les events publics
+    resources :events do
       member do
         post :join
         delete :leave
       end
-
-      resources :group_events do
-        member do
-          post :join
-          delete :leave
-        end
-      end
-
-      resources :messages, only: [] do
-        collection do
-          get :group_index
-          post :create_group_message
-        end
+      collection do
+        get :upcoming
+        get :my_events
       end
     end
   end

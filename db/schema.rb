@@ -10,27 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_01_19_153610) do
+ActiveRecord::Schema[7.0].define(version: 2025_01_27_210320) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "event_participations", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.bigint "group_event_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["group_event_id"], name: "index_event_participations_on_group_event_id"
-    t.index ["user_id", "group_event_id"], name: "index_event_participations_on_user_id_and_group_event_id", unique: true
-    t.index ["user_id"], name: "index_event_participations_on_user_id"
-  end
-
-  create_table "group_events", force: :cascade do |t|
-    t.string "title"
-    t.datetime "date"
-    t.string "meeting_point"
+  create_table "events", force: :cascade do |t|
+    t.string "name"
+    t.datetime "start_date"
+    t.string "location"
     t.float "distance"
     t.string "pace"
-    t.bigint "running_group_id", null: false
     t.bigint "creator_id"
     t.float "latitude"
     t.float "longitude"
@@ -39,10 +28,11 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_19_153610) do
     t.integer "status", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["creator_id"], name: "index_group_events_on_creator_id"
-    t.index ["date"], name: "index_group_events_on_date"
-    t.index ["running_group_id"], name: "index_group_events_on_running_group_id"
-    t.index ["status"], name: "index_group_events_on_status"
+    t.integer "level", default: 0
+    t.index ["creator_id"], name: "index_events_on_creator_id"
+    t.index ["level"], name: "index_events_on_level"
+    t.index ["start_date"], name: "index_events_on_start_date"
+    t.index ["status"], name: "index_events_on_status"
   end
 
   create_table "group_memberships", force: :cascade do |t|
@@ -54,6 +44,17 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_19_153610) do
     t.index ["running_group_id"], name: "index_group_memberships_on_running_group_id"
     t.index ["user_id", "running_group_id"], name: "index_group_memberships_on_user_id_and_running_group_id", unique: true
     t.index ["user_id"], name: "index_group_memberships_on_user_id"
+  end
+
+  create_table "join_requests", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "running_group_id", null: false
+    t.text "message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["running_group_id"], name: "index_join_requests_on_running_group_id"
+    t.index ["user_id", "running_group_id"], name: "index_join_requests_on_user_id_and_running_group_id", unique: true
+    t.index ["user_id"], name: "index_join_requests_on_user_id"
   end
 
   create_table "messages", force: :cascade do |t|
@@ -111,6 +112,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_19_153610) do
     t.integer "members_count", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "privacy", default: 0
     t.index ["creator_id"], name: "index_running_groups_on_creator_id"
     t.index ["level"], name: "index_running_groups_on_level"
     t.index ["status"], name: "index_running_groups_on_status"
@@ -139,30 +141,29 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_19_153610) do
     t.string "last_name"
     t.integer "age"
     t.string "gender"
-    t.string "location"
     t.string "profile_image"
     t.text "bio"
     t.string "authentication_token"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "expo_push_token"
-    t.decimal "latitude"
-    t.decimal "longitude"
+    t.decimal "latitude", precision: 10, scale: 6
+    t.decimal "longitude", precision: 10, scale: 6
     t.string "city"
     t.string "department"
-    t.string "country"
+    t.string "country", default: "France"
     t.string "postcode"
     t.index ["authentication_token"], name: "index_users_on_authentication_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["latitude", "longitude"], name: "index_users_on_latitude_and_longitude"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "event_participations", "group_events"
-  add_foreign_key "event_participations", "users"
-  add_foreign_key "group_events", "running_groups"
-  add_foreign_key "group_events", "users", column: "creator_id"
+  add_foreign_key "events", "users", column: "creator_id"
   add_foreign_key "group_memberships", "running_groups"
   add_foreign_key "group_memberships", "users"
+  add_foreign_key "join_requests", "running_groups"
+  add_foreign_key "join_requests", "users"
   add_foreign_key "messages", "running_groups"
   add_foreign_key "messages", "users", column: "recipient_id"
   add_foreign_key "messages", "users", column: "sender_id"
