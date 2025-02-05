@@ -1,66 +1,88 @@
 class Api::RunningGroupsController < ApplicationController
   before_action :authenticate_user_from_token!
   before_action :set_running_group, except: [:index, :create]
+  before_action :ensure_member, only: [:show, :update, :destroy, :members]
 
   def index
-    @groups = RunningGroup.includes(:creator, :members)
-                          .near([current_user.latitude, current_user.longitude], 20)
-                          .where(status: :active)
-
-
-    render json: {
-      groups: @groups.map { |group| group_with_details(group) },
-      total: @groups.size
-    }
+    @running_groups = current_user.running_groups.near([current_user.latitude, current_user.longitude], 20)
+    puts "RUNNING GROUPS #{@running_groups.to_json}"
+    render json: @running_groups.map { |group| group_with_details(group) }
   end
 
   def show
-    render json: group_with_details(@running_group)
+    if @running_group.members.include?(current_user)
+      render json: group_with_details(@running_group)
+    else
+      render json: {
+        id: @running_group.id,
+        name: @running_group.name,
+        description: @running_group.description,
+        level: @running_group.level,
+        location: @running_group.location,
+        members_count: @running_group.members_count,
+        is_member: false,
+        can_join: @running_group.can_join?(current_user),
+        has_pending_request: @running_group.join_requests.exists?(user: current_user, status: :pending)
+      }
+    end
   end
 
   def create
     @running_group = current_user.created_groups.build(running_group_params)
 
     if @running_group.save
+      GroupMembership.create!(user: current_user, running_group: @running_group, role: :admin)
       render json: group_with_details(@running_group), status: :created
     else
       render json: { errors: @running_group.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
-  def join
+  def request_to_join
     return render json: { error: 'Groupe complet' }, status: :unprocessable_entity if @running_group.full?
 
-    membership = @running_group.group_memberships.build(user: current_user)
+    join_request = @running_group.join_requests.build(user: current_user)
 
-    if membership.save
-      render json: { message: 'Vous avez rejoint le groupe avec succès' }
+    if join_request.save
+      render json: { message: 'Demande envoyée' }
     else
-      render json: { errors: membership.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: join_request.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
   def leave
     membership = @running_group.group_memberships.find_by(user: current_user)
 
-    if membership&.destroy
-      render json: { message: 'Vous avez quitté le groupe' }
+    if membership
+      if membership.admin? && @running_group.admins.count == 1
+        render json: { error: "Vous ne pouvez pas quitter le groupe car vous êtes le seul administrateur" },
+               status: :unprocessable_entity
+      else
+        membership.destroy
+        render json: { message: "Vous avez quitté le groupe avec succès" }
+      end
     else
-      render json: { error: 'Vous n\'êtes pas membre de ce groupe' }, status: :unprocessable_entity
+      render json: { error: "Vous n'êtes pas membre de ce groupe" },
+             status: :unprocessable_entity
     end
   end
 
   private
 
   def set_running_group
-    @running_group = RunningGroup.includes(:members, :group_memberships, :creator).find(params[:id])
+    @running_group = RunningGroup.find(params[:id])
+  end
+
+  def ensure_member
+    unless @running_group.members.include?(current_user)
+      render json: { error: 'Vous devez être membre du groupe pour voir ces informations' },
+             status: :unauthorized
+    end
   end
 
   def running_group_params
-    params.require(:running_group).permit(
-      :name, :description, :level, :max_members,
-      :location, :cover_image, weekly_schedule: []
-    )
+    params.require(:running_group).permit(:name, :description, :level, :max_members,
+                                        :location, :weekly_schedule, :cover_image)
   end
 
   def group_with_details(group)
@@ -70,11 +92,10 @@ class Api::RunningGroupsController < ApplicationController
       description: group.description,
       level: group.level,
       location: group.location,
-      members_count: group.members_count,
       max_members: group.max_members,
+      members_count: group.members_count,
       cover_image: group.cover_image,
       weekly_schedule: group.weekly_schedule,
-      distance_km: current_user.distance_to([group.latitude, group.longitude])&.round(1),
       creator: {
         id: group.creator.id,
         name: group.creator.first_name,
@@ -82,14 +103,13 @@ class Api::RunningGroupsController < ApplicationController
       },
       members: group.members.map { |member| {
         id: member.id,
-        first_name: member.first_name,
-        last_name: member.last_name,
-        profile_image: member.profile_image,
-        is_admin: group.group_memberships.exists?(user: member, role: :admin)
+        name: member.first_name,
+        profile_image: member.profile_image
       }},
+      is_admin: group.admins.include?(current_user),
+      is_creator: group.creator == current_user,
       is_member: group.members.include?(current_user),
-      is_admin: group.group_memberships.exists?(user: current_user, role: :admin),
-      upcoming_events: group.group_events.upcoming.limit(3)
+      pending_requests_count: group.pending_requests.count
     }
   end
 end

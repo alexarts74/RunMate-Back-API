@@ -2,8 +2,9 @@ class RunningGroup < ApplicationRecord
   belongs_to :creator, class_name: 'User'
   has_many :group_memberships, dependent: :destroy
   has_many :members, through: :group_memberships, source: :user
-  has_many :group_events, dependent: :destroy
   has_many :messages, dependent: :destroy
+  has_many :join_requests, class_name: 'JoinRequest', dependent: :destroy
+  has_many :requesting_users, through: :join_requests, source: :user
 
   validates :name, presence: true
   validates :description, presence: true
@@ -14,30 +15,15 @@ class RunningGroup < ApplicationRecord
   enum level: {
     beginner: 0,
     intermediate: 1,
-    advanced: 2,
-    expert: 3
+    advanced: 2
   }
-
-  enum status: {
-    active: 0,
-    full: 1,
-    archived: 2
-  }
-
-  enum privacy: {
-    private: 0,
-    public: 1
-  }, _default: :private
-
-  has_many :join_requests, dependent: :destroy
-  has_many :requesting_users, through: :join_requests, source: :user
 
   geocoded_by :location
   after_validation :geocode, if: :location_changed?
   after_create :add_creator_as_admin
 
   def full?
-    members_count >= max_members
+    members.count >= max_members
   end
 
   def member?(user)
@@ -68,6 +54,18 @@ class RunningGroup < ApplicationRecord
     request.destroy
     # Envoyer notification de refus
     true
+  end
+
+  def admins
+    group_memberships.admin.map(&:user)
+  end
+
+  def pending_requests
+    join_requests.pending
+  end
+
+  def can_join?(user)
+    !full? && !members.include?(user)
   end
 
   private

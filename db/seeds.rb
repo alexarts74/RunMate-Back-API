@@ -1,7 +1,7 @@
 # Nettoyer la base de données
 puts "Cleaning database..."
 EventParticipation.destroy_all  # Supprimer d'abord les participations aux événements
-GroupEvent.destroy_all         # Puis les événements
+Event.destroy_all               # Puis les événements
 GroupMembership.destroy_all    # Puis les adhésions aux groupes
 RunningGroup.destroy_all       # Puis les groupes
 User.destroy_all
@@ -152,116 +152,186 @@ GROUP_IMAGES = [
 
 EVENT_TYPES = [
   {
-    title: "Sortie longue",
+    name: "Sortie longue",
     distance: 15,
     pace: "6:00",
-    description: "Sortie endurance à allure modérée"
+    description: "Sortie endurance à allure modérée",
+    level: :intermediate
   },
   {
-    title: "Fractionné",
+    name: "Fractionné",
     distance: 8,
     pace: "4:30",
-    description: "Session d'entraînement intensive"
+    description: "Session d'entraînement intensive",
+    level: :advanced
   },
   {
-    title: "Initiation Trail",
+    name: "Initiation Trail",
     distance: 10,
     pace: "7:00",
-    description: "Découverte des sentiers de montagne"
+    description: "Découverte des sentiers de montagne",
+    level: :beginner
+  },
+  {
+    name: "Course tranquille",
+    distance: 5,
+    pace: "6:30",
+    description: "Sortie décontractée entre coureurs",
+    level: :beginner
   }
 ]
-# Créer des groupes avec différents statuts
-GROUP_TYPES.each do |group_type|
-  CITIES.each do |city|
-    creator = User.all.sample
-    group = RunningGroup.create!(
-      name: group_type[:name],
-      description: group_type[:description],
-      level: group_type[:level],
-      max_members: rand(10..20),
-      location: "#{city[:name]}, #{city[:department]}",
-      creator: creator,
-      weekly_schedule: [
-        "Lundi 18:00",
-        "Mercredi 18:30",
-        "Samedi 9:00"
-      ].sample(2),
-      cover_image: GROUP_IMAGES.sample
+
+puts "\nCreating events..."
+
+# Créer des événements dans chaque ville
+CITIES.each do |city|
+  EVENT_TYPES.each do |event_type|
+    # Événements à venir (2 par type)
+    2.times do |i|
+      creator = User.all.sample
+      event = Event.create!(
+        creator: creator,
+        name: "#{event_type[:name]} ##{i+1}",
+        start_date: Time.current + rand(1..30).days,
+        location: "#{city[:name]}, #{Faker::Address.street_address}",
+        distance: event_type[:distance],
+        pace: event_type[:pace],
+        description: event_type[:description],
+        max_participants: rand(5..15),
+        level: event_type[:level],
+        status: :upcoming
+      )
+
+      # Ajouter des participants aléatoires
+      rand(3..10).times do
+        user = User.where.not(id: creator.id).sample
+        EventParticipation.create(
+          user: user,
+          event: event
+        ) unless event.participants.include?(user)
+      end
+    end
+
+    # Événements passés (1 par type)
+    event = Event.create!(
+      creator: User.all.sample,
+      name: "#{event_type[:name]} (Passé)",
+      start_date: Time.current - rand(1..30).days,
+      location: "#{city[:name]}, #{Faker::Address.street_address}",
+      distance: event_type[:distance],
+      pace: event_type[:pace],
+      description: event_type[:description],
+      max_participants: rand(5..15),
+      level: event_type[:level],
+      status: [:completed, :cancelled].sample
     )
 
-    # Ajouter des membres aléatoires
-    rand(5..15).times do
-      user = User.where.not(id: creator.id).sample
-      GroupMembership.create(
+    # Ajouter des participants aux événements passés
+    rand(3..10).times do
+      user = User.all.sample
+      EventParticipation.create(
         user: user,
-        running_group: group,
-        role: rand(10) == 0 ? :admin : :member
-      ) unless group.members.include?(user)
+        event: event
+      ) unless event.participants.include?(user)
     end
-
-    EVENT_TYPES.each do |event_type|
-      # Événements à venir
-      2.times do |i|
-        event = GroupEvent.create!(
-          running_group: group,
-          creator: group.members.sample,
-          title: "#{event_type[:title]} ##{i+1}",
-          date: Time.current + rand(1..30).days,
-          meeting_point: "#{city[:name]}, #{Faker::Address.street_address}",
-          distance: event_type[:distance],
-          pace: event_type[:pace],
-          description: event_type[:description],
-          max_participants: rand(5..15),
-          status: :scheduled
-        )
-
-        # Ajouter des participants
-        rand(3..10).times do
-          user = group.members.sample
-          EventParticipation.create(
-            user: user,
-            group_event: event
-          ) unless event.participants.include?(user)
-        end
-      end
-
-      1.times do
-        event = GroupEvent.create!(
-          running_group: group,
-          creator: group.members.sample,
-          title: "#{event_type[:title]} (Passé)",
-          date: Time.current - rand(1..30).days,
-          meeting_point: "#{city[:name]}, #{Faker::Address.street_address}",
-          distance: event_type[:distance],
-          pace: event_type[:pace],
-          description: event_type[:description],
-          max_participants: rand(5..15),
-          status: [:completed, :cancelled].sample
-        )
-
-        # Ajouter des participants aux événements passés
-        rand(3..10).times do
-          user = group.members.sample
-          EventParticipation.create(
-            user: user,
-            group_event: event
-          ) unless event.participants.include?(user)
-        end
-      end
-    end
-    print "."
   end
+  print "."
 end
 
 puts "\nSeeding completed!"
 puts "Created #{User.count} users"
-puts "Created #{RunningGroup.count} groups"
-puts "Created #{GroupMembership.count} group memberships"
-puts "Created #{GroupEvent.count} events"
+puts "Created #{Event.count} events"
 puts "Created #{EventParticipation.count} event participations"
 
 # Vérifications finales
 puts "\nVérifications :"
-puts "Groupes pleins : #{RunningGroup.where(status: :full).count}"
-puts "Événements à venir : #{GroupEvent.upcoming.count}"
-puts "Événements passés : #{GroupEvent.past.count}"
+puts "Événements à venir : #{Event.upcoming.count}"
+puts "Événements passés : #{Event.past.count}"
+puts "Événements par niveau :"
+Event.group(:level).count.each do |level, count|
+  puts "- #{level}: #{count}"
+end
+
+puts "\nCreating private groups..."
+
+# Créer des groupes privés dans chaque ville
+CITIES.each do |city|
+  GROUP_TYPES.each do |group_type|
+    # Création du groupe privé
+    creator = User.all.sample
+    private_group = RunningGroup.create!(
+      name: "#{group_type[:name]} - #{city[:name]}",
+      description: "#{group_type[:description]} à #{city[:name]} - Groupe privé sur invitation",
+      level: group_type[:level],
+      max_members: rand(5..15),
+      location: "#{city[:name]}, #{city[:department]}",
+      creator: creator,
+      weekly_schedule: ["Lundi 19:00", "Jeudi 18:30", "Samedi 10:00"].sample(2),
+      cover_image: GROUP_IMAGES.sample,
+      visibility: :private_group
+    )
+
+    # Ajouter des membres au groupe privé
+    rand(3..8).times do
+      user = User.where.not(id: creator.id).sample
+      GroupMembership.create(
+        user: user,
+        running_group: private_group,
+        role: rand(10) == 0 ? :admin : :member
+      ) unless private_group.members.include?(user)
+    end
+  end
+  print "."
+end
+
+# Ajouter l'utilisateur test à quelques groupes privés
+test_user = User.find_by(email: "test@example.com")
+# Utiliser where au lieu de private_group
+private_groups = RunningGroup.limit(3)  # Tous les groupes sont privés maintenant
+
+private_groups.each do |group|
+  GroupMembership.create!(
+    user: test_user,
+    running_group: group,
+    role: :member
+  ) unless group.members.include?(test_user)
+end
+
+puts "\nGroups created!"
+puts "Created #{RunningGroup.count} private groups"
+puts "Created #{GroupMembership.count} group memberships"
+puts "Test user is member of #{test_user.running_groups.count} groups"
+
+puts "\nCreating join requests..."
+
+# Créer quelques demandes d'adhésion pour chaque groupe
+RunningGroup.all.each do |group|
+  # Sélectionner des utilisateurs qui ne sont pas déjà membres
+  non_members = User.where.not(id: group.members.pluck(:id)).sample(rand(2..5))
+
+  non_members.each do |user|
+    JoinRequest.create!(
+      user: user,
+      running_group: group,
+      message: Faker::Lorem.sentence,
+      status: :pending
+    )
+  end
+  print "."
+end
+
+puts "\nJoin requests created!"
+puts "Created #{JoinRequest.count} join requests"
+
+# Créer quelques demandes d'adhésion pour l'utilisateur test
+non_member_groups = RunningGroup.where.not(id: test_user.running_groups.pluck(:id)).sample(2)
+non_member_groups.each do |group|
+  JoinRequest.create!(
+    user: test_user,
+    running_group: group,
+    message: "Demande de test",
+    status: :pending
+  )
+end
+
+puts "Test user has #{test_user.join_requests.count} pending join requests"

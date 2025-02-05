@@ -10,9 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_01_27_210320) do
+ActiveRecord::Schema[7.0].define(version: 2025_02_01_183730) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "event_participations", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "event_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_event_participations_on_event_id"
+    t.index ["user_id", "event_id"], name: "index_event_participations_on_user_id_and_event_id", unique: true
+    t.index ["user_id"], name: "index_event_participations_on_user_id"
+  end
 
   create_table "events", force: :cascade do |t|
     t.string "name"
@@ -52,7 +62,9 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_27_210320) do
     t.text "message"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "status", default: 0
     t.index ["running_group_id"], name: "index_join_requests_on_running_group_id"
+    t.index ["status"], name: "index_join_requests_on_status"
     t.index ["user_id", "running_group_id"], name: "index_join_requests_on_user_id_and_running_group_id", unique: true
     t.index ["user_id"], name: "index_join_requests_on_user_id"
   end
@@ -112,7 +124,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_27_210320) do
     t.integer "members_count", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "privacy", default: 0
+    t.integer "visibility", default: 0
     t.index ["creator_id"], name: "index_running_groups_on_creator_id"
     t.index ["level"], name: "index_running_groups_on_level"
     t.index ["status"], name: "index_running_groups_on_status"
@@ -159,6 +171,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_27_210320) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "event_participations", "events"
+  add_foreign_key "event_participations", "users"
   add_foreign_key "events", "users", column: "creator_id"
   add_foreign_key "group_memberships", "running_groups"
   add_foreign_key "group_memberships", "users"

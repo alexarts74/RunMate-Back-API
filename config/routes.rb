@@ -52,9 +52,16 @@ Rails.application.routes.draw do
         post :accept_request
         delete :decline_request
         get :pending_requests
+        delete :leave
       end
       collection do
         get :search_users
+      end
+      resources :messages do
+        collection do
+          get :group_index
+          post :create_group_message  # Ajouter cette ligne
+        end
       end
     end
 

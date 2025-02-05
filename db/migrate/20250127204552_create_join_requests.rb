@@ -8,6 +8,7 @@ class CreateJoinRequests < ActiveRecord::Migration[7.0]
     end
 
     add_index :join_requests, [:user_id, :running_group_id], unique: true
-    add_column :running_groups, :privacy, :integer, default: 0
+    # Supprimer cette ligne car on utilise visibility maintenant
+    # add_column :running_groups, :privacy, :integer, default: 0
   end
 end

@@ -43,15 +43,14 @@ class Api::MessagesController < ApplicationController
 
   # Obtenir les messages d'un groupe
   def group_index
-    # Vérifie si l'utilisateur est membre du groupe
     unless @running_group.member?(current_user)
       return render json: { error: "Vous n'êtes pas membre de ce groupe" }, status: :forbidden
     end
 
     messages = @running_group.messages
-                           .group_messages
-                           .includes(:sender)
-                           .order(created_at: :desc)
+                            .group_messages
+                            .includes(:sender)
+                            .order(created_at: :desc)
 
     render json: {
       group: {
@@ -73,19 +72,16 @@ class Api::MessagesController < ApplicationController
 
   # Créer un message direct
   def create
-    message = current_user.sent_messages.build(message_params.merge(message_type: 'direct'))
-    message.read = false
-
-    if message.save
-      render json: message, status: :created
+    if params[:running_group_id]
+      @running_group = RunningGroup.find(params[:running_group_id])
+      create_group_message
     else
-      render json: { errors: message.errors.full_messages }, status: :unprocessable_entity
+      create_direct_message
     end
   end
 
   # Créer un message de groupe
   def create_group_message
-    # Vérifie si l'utilisateur est membre du groupe
     unless @running_group.member?(current_user)
       return render json: { error: "Vous n'êtes pas membre de ce groupe" }, status: :forbidden
     end
@@ -119,7 +115,7 @@ class Api::MessagesController < ApplicationController
   end
 
   def message_params
-    params.require(:message).permit(:content, :recipient_id)
+    params.require(:message).permit(:content, :recipient_id, :message_type, :running_group_id)
   end
 
   def group_message_json(message)
@@ -133,5 +129,16 @@ class Api::MessagesController < ApplicationController
         profile_image: message.sender.profile_image
       }
     }
+  end
+
+  def create_direct_message
+    message = current_user.sent_messages.build(message_params.merge(message_type: 'direct'))
+    message.read = false
+
+    if message.save
+      render json: message, status: :created
+    else
+      render json: { errors: message.errors.full_messages }, status: :unprocessable_entity
+    end
   end
 end
