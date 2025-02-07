@@ -4,9 +4,32 @@ class Api::RunningGroupsController < ApplicationController
   before_action :ensure_member, only: [:show, :update, :destroy, :members]
 
   def index
-    @running_groups = current_user.running_groups.near([current_user.latitude, current_user.longitude], 20)
-    puts "RUNNING GROUPS #{@running_groups.to_json}"
-    render json: @running_groups.map { |group| group_with_details(group) }
+    @running_groups = RunningGroup.joins(:group_memberships)
+                                .where(group_memberships: { user_id: current_user.id })
+
+    response_data = @running_groups.map do |group|
+      last_message = Message.where(running_group_id: group.id)
+                          .where(message_type: 'group')
+                          .includes(:sender)
+                          .order(created_at: :desc)
+                          .first
+
+      group_data = group_with_details(group)
+      group_data[:last_message] = last_message ? {
+        id: last_message.id,
+        content: last_message.content,
+        created_at: last_message.created_at,
+        sender: {
+          id: last_message.sender.id,
+          first_name: last_message.sender.first_name,
+          profile_image: last_message.sender.profile_image
+        }
+      } : nil
+
+      group_data
+    end
+
+    render json: response_data
   end
 
   def show
@@ -104,11 +127,12 @@ class Api::RunningGroupsController < ApplicationController
       members: group.members.map { |member| {
         id: member.id,
         name: member.first_name,
-        profile_image: member.profile_image
+        profile_image: member.profile_image,
+        is_admin: group.group_memberships.exists?(user: member, role: :admin)
       }},
       is_admin: group.admins.include?(current_user),
       is_creator: group.creator == current_user,
-      is_member: group.members.include?(current_user),
+      is_member: true,
       pending_requests_count: group.pending_requests.count
     }
   end

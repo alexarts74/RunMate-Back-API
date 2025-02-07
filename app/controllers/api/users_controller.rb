@@ -1,5 +1,6 @@
 class Api::UsersController < ApplicationController
   before_action :authenticate_user_from_token!
+  before_action :set_user, only: [:show, :update]
   # On peut enlever set_user car on utilise directement current_user
 
   def show
@@ -7,24 +8,14 @@ class Api::UsersController < ApplicationController
   end
 
   def update
-
-
-    # Désactiver la validation du mot de passe si non fourni
-    current_user.skip_password_validation = true if params[:user][:password].blank?
-    current_user.skip_password_validation = true if params[:user][:password_confirmation].blank?
-
-    if current_user.update(user_params)
-      # Mise à jour du profil runner si présent
-      if params[:user][:runner_profile].present? && current_user.runner_profile.present?
-        current_user.runner_profile.update(runner_profile_params)
+    if @user.update(user_params)
+      if params[:user][:runner_profile].present?
+        @runner_profile = @user.runner_profile || @user.build_runner_profile
+        @runner_profile.update(runner_profile_params)
       end
-
-      render json: {
-        message: "Profil mis à jour avec succès",
-        user: user_with_profile_json
-      }
+      render json: @user
     else
-      render json: { errors: current_user.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
@@ -90,8 +81,12 @@ end
 
   private
 
+  def set_user
+    @user = current_user
+  end
+
   def user_with_profile_json
-    current_user.as_json(
+    @user.as_json(
       only: [:id, :email, :first_name, :last_name, :age, :gender, :location, :bio, :profile_image],
       include: {
         runner_profile: {
@@ -108,19 +103,24 @@ end
       :last_name,
       :age,
       :gender,
-      :location,
-      :bio,
       :profile_image,
-      :expo_push_token
+      :bio,
+      :expo_push_token,
+      :latitude,
+      :longitude,
+      :city,
+      :department,
+      :country,
+      :postcode
     )
   end
 
   def runner_profile_params
     params.require(:user).require(:runner_profile).permit(
       :actual_pace,
-      :usual_distance,
       :availability,
-      :objective
+      :objective,
+      :usual_distance
     )
   end
 end

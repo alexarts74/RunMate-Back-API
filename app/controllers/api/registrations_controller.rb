@@ -61,7 +61,6 @@ class Api::RegistrationsController < Devise::RegistrationsController
           :country,
           :latitude,
           :longitude,
-          :location,
           :postcode
         )
     end
