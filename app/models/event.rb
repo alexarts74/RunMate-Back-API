@@ -11,9 +11,8 @@ class Event < ApplicationRecord
   validates :location, presence: true
   validates :max_participants, presence: true, numericality: { greater_than: 0 }
   validates :distance, presence: true, numericality: { greater_than: 0 }
-  validates :pace, presence: true
   validates :level, presence: true
-
+  validates :cover_image, presence: true
   enum level: {
     beginner: 0,
     intermediate: 1,
@@ -35,7 +34,7 @@ class Event < ApplicationRecord
   scope :upcoming, -> { where(status: :upcoming).where('start_date > ?', Time.current) }
   scope :past, -> { where(status: [:completed, :cancelled]) }
   scope :by_level, ->(level) { where(level: level) if level.present? }
-  scope :near_location, ->(latitude, longitude, distance_km = 20) {
+  scope :near_location, ->(latitude, longitude, distance_km = 100) {
     near([latitude, longitude], distance_km)
   }
 

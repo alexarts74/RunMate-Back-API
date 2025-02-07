@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_02_01_183730) do
+ActiveRecord::Schema[7.0].define(version: 2025_02_07_191428) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -29,7 +29,6 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_01_183730) do
     t.datetime "start_date"
     t.string "location"
     t.float "distance"
-    t.string "pace"
     t.bigint "creator_id"
     t.float "latitude"
     t.float "longitude"
@@ -39,6 +38,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_01_183730) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "level", default: 0
+    t.string "cover_image"
     t.index ["creator_id"], name: "index_events_on_creator_id"
     t.index ["level"], name: "index_events_on_level"
     t.index ["start_date"], name: "index_events_on_start_date"

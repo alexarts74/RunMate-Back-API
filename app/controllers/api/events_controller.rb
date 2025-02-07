@@ -16,21 +16,21 @@ class Api::EventsController < ApplicationController
     SQL
 
     @events = Event.select("events.*, #{distance_formula}")
-                   .includes(:creator, :participants, :event_participations)
-                   .upcoming
-                   .where("start_date > ?", Time.current)
-                   .where(<<-SQL)
-                     events.latitude BETWEEN #{lat} - 0.2895635662217 AND #{lat} + 0.2895635662217
-                     AND events.longitude BETWEEN #{lng} - 0.416202980215766 AND #{lng} + 0.416202980215766
-                     AND (
-                       3958.755864232 * 2 * ASIN(SQRT(
-                         POWER(SIN((#{lat} - events.latitude) * PI() / 180 / 2), 2) +
-                         COS(#{lat} * PI() / 180) * COS(events.latitude * PI() / 180) *
-                         POWER(SIN((#{lng} - events.longitude) * PI() / 180 / 2), 2)
-                       ))
-                     ) <= 20
-                   SQL
-                   .order('calculated_distance ASC')
+                    .includes(:creator, :participants, :event_participations)
+                    .upcoming
+                    .where("start_date > ?", Time.current)
+                    .where(<<-SQL)
+                      events.latitude BETWEEN #{lat} - 0.2895635662217 AND #{lat} + 0.2895635662217
+                      AND events.longitude BETWEEN #{lng} - 0.416202980215766 AND #{lng} + 0.416202980215766
+                      AND (
+                        3958.755864232 * 2 * ASIN(SQRT(
+                          POWER(SIN((#{lat} - events.latitude) * PI() / 180 / 2), 2) +
+                          COS(#{lat} * PI() / 180) * COS(events.latitude * PI() / 180) *
+                          POWER(SIN((#{lng} - events.longitude) * PI() / 180 / 2), 2)
+                        ))
+                      ) <= 20
+                    SQL
+                    .order('calculated_distance ASC')
 
     @events = @events.by_level(params[:level]) if params[:level].present?
 
@@ -46,6 +46,21 @@ class Api::EventsController < ApplicationController
   end
 
   def show
+    lat = current_user.latitude
+    lng = current_user.longitude
+
+    distance_formula = <<-SQL
+      (3958.755864232 * 2 * ASIN(SQRT(
+        POWER(SIN((#{lat} - events.latitude) * PI() / 180 / 2), 2) +
+        COS(#{lat} * PI() / 180) * COS(events.latitude * PI() / 180) *
+        POWER(SIN((#{lng} - events.longitude) * PI() / 180 / 2), 2)
+      ))) AS calculated_distance
+    SQL
+
+    @event = Event.select("events.*, #{distance_formula}")
+                  .includes(:creator, :participants)
+                  .find(params[:id])
+
     render json: event_with_details(@event)
   end
 
@@ -76,16 +91,68 @@ class Api::EventsController < ApplicationController
   end
 
   def join
-    return render json: { error: 'Event complet' }, status: :unprocessable_entity if @event.full?
-    return render json: { error: 'Vous participez déjà' }, status: :unprocessable_entity if @event.participant?(current_user)
-    return render json: { error: 'Event non disponible' }, status: :unprocessable_entity unless @event.upcoming?
+    lat = current_user.latitude
+    lng = current_user.longitude
 
-    participation = @event.event_participations.build(user: current_user)
+    Rails.logger.info "=== JOIN EVENT DEBUG ==="
+    Rails.logger.info "Event ID: #{@event.id}"
+    Rails.logger.info "Current User ID: #{current_user.id}"
+
+    # Vérifier si l'utilisateur participe déjà
+    existing_participation = EventParticipation.find_by(
+      event_id: @event.id,
+      user_id: current_user.id
+    )
+
+    if existing_participation
+      Rails.logger.info "User already participating"
+      return render json: {
+        status: "error",
+        code: "already_participating",
+        message: "Vous participez déjà à cet événement"
+      }, status: :ok  # 200 au lieu de 422
+    end
+
+    # Vérifier si l'événement est plein
+    if @event.full?
+      Rails.logger.info "Event is full"
+      return render json: {
+        status: "error",
+        code: "event_full",
+        message: "L'événement est complet"
+      }, status: :ok  # 200 au lieu de 422
+    end
+
+    # Créer la participation
+    participation = EventParticipation.new(event: @event, user: current_user)
 
     if participation.save
-      render json: event_with_details(@event)
+      Rails.logger.info "Participation created successfully"
+
+      distance_formula = <<-SQL
+        (3958.755864232 * 2 * ASIN(SQRT(
+          POWER(SIN((#{lat} - events.latitude) * PI() / 180 / 2), 2) +
+          COS(#{lat} * PI() / 180) * COS(events.latitude * PI() / 180) *
+          POWER(SIN((#{lng} - events.longitude) * PI() / 180 / 2), 2)
+        ))) AS calculated_distance
+      SQL
+
+      @event = Event.select("events.*, #{distance_formula}")
+                    .includes(:creator, :participants)
+                    .find(@event.id)
+
+      render json: {
+        status: "success",
+        message: "Vous avez rejoint l'événement avec succès",
+        data: event_with_details(@event)
+      }, status: :ok
     else
-      render json: { errors: participation.errors.full_messages }, status: :unprocessable_entity
+      Rails.logger.error "Participation creation failed"
+      render json: {
+        status: "error",
+        code: "creation_failed",
+        message: participation.errors.full_messages.join(", ")
+      }, status: :ok
     end
   end
 
@@ -126,7 +193,12 @@ class Api::EventsController < ApplicationController
   private
 
   def set_event
-    @event = Event.find(params[:id])
+    @event = Event.includes(:participants).find(params[:id])
+    Rails.logger.info "=== EVENT DETAILS ==="
+    Rails.logger.info "Event found: #{@event.present?}"
+    Rails.logger.info "Event status: #{@event.status}"
+    Rails.logger.info "Event max_participants: #{@event.max_participants}"
+    Rails.logger.info "Current participants: #{@event.participants.count}"
   end
 
   def event_params
@@ -136,9 +208,9 @@ class Api::EventsController < ApplicationController
       :start_date,
       :location,
       :distance,
-      :pace,
       :level,
-      :max_participants
+      :max_participants,
+      :cover_image
     )
   end
 
@@ -156,7 +228,6 @@ class Api::EventsController < ApplicationController
       start_date: event.start_date,
       location: event.location,
       distance: event.calculated_distance.to_f.round(2),
-      pace: event.pace,
       level: event.level,
       status: event.status,
       latitude: event.latitude,
@@ -169,6 +240,15 @@ class Api::EventsController < ApplicationController
         name: event.creator.first_name,
         profile_image: event.creator.profile_image
       },
+      participants: event.participants.map { |participant|
+        {
+          id: participant.id,
+          name: participant.first_name,
+          profile_image: participant.profile_image,
+          is_creator: participant.id == event.creator_id
+        }
+      },
+      cover_image: event.cover_image,
       is_creator: event.creator_id == current_user.id,
       is_participant: event.participants.map(&:id).include?(current_user.id),
       can_join: !event.participants.map(&:id).include?(current_user.id) && event.participants.size < event.max_participants,
