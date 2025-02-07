@@ -188,6 +188,10 @@ CITIES.each do |city|
   EVENT_TYPES.each do |event_type|
     # Événements à venir (2 par type)
     2.times do |i|
+      # Ajouter un peu de randomisation aux coordonnées pour disperser les événements
+      lat_offset = rand(-0.005..0.005)
+      lng_offset = rand(-0.005..0.005)
+
       creator = User.all.sample
       event = Event.create!(
         creator: creator,
@@ -199,7 +203,9 @@ CITIES.each do |city|
         description: event_type[:description],
         max_participants: rand(5..15),
         level: event_type[:level],
-        status: :upcoming
+        status: :upcoming,
+        latitude: city[:coords][0] + lat_offset,
+        longitude: city[:coords][1] + lng_offset
       )
 
       # Ajouter des participants aléatoires
@@ -213,6 +219,10 @@ CITIES.each do |city|
     end
 
     # Événements passés (1 par type)
+    # Ajouter un peu de randomisation aux coordonnées
+    lat_offset = rand(-0.005..0.005)
+    lng_offset = rand(-0.005..0.005)
+
     event = Event.create!(
       creator: User.all.sample,
       name: "#{event_type[:name]} (Passé)",
@@ -223,7 +233,9 @@ CITIES.each do |city|
       description: event_type[:description],
       max_participants: rand(5..15),
       level: event_type[:level],
-      status: [:completed, :cancelled].sample
+      status: [:completed, :cancelled].sample,
+      latitude: city[:coords][0] + lat_offset,
+      longitude: city[:coords][1] + lng_offset
     )
 
     # Ajouter des participants aux événements passés
@@ -251,6 +263,10 @@ puts "Événements par niveau :"
 Event.group(:level).count.each do |level, count|
   puts "- #{level}: #{count}"
 end
+
+puts "\nVérification des coordonnées :"
+puts "Événements sans latitude : #{Event.where(latitude: nil).count}"
+puts "Événements sans longitude : #{Event.where(longitude: nil).count}"
 
 puts "\nCreating private groups..."
 

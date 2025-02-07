@@ -1,4 +1,6 @@
 class Event < ApplicationRecord
+  DISTANCE_SQL = "3958.755864232 * 2 * ASIN(SQRT(POWER(SIN((:lat - events.latitude) * PI() / 180 / 2), 2) + COS(:lat * PI() / 180) * COS(events.latitude * PI() / 180) * POWER(SIN((:lng - events.longitude) * PI() / 180 / 2), 2)))"
+
   belongs_to :creator, class_name: 'User'
   has_many :event_participations, dependent: :destroy
   has_many :participants, through: :event_participations, source: :user

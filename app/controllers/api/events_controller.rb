@@ -4,15 +4,44 @@ class Api::EventsController < ApplicationController
   before_action :ensure_creator, only: [:update, :destroy]
 
   def index
-    @events = Event.includes(:creator, :participants)
+    lat = current_user.latitude
+    lng = current_user.longitude
+
+    distance_formula = <<-SQL
+      (3958.755864232 * 2 * ASIN(SQRT(
+        POWER(SIN((#{lat} - events.latitude) * PI() / 180 / 2), 2) +
+        COS(#{lat} * PI() / 180) * COS(events.latitude * PI() / 180) *
+        POWER(SIN((#{lng} - events.longitude) * PI() / 180 / 2), 2)
+      ))) AS calculated_distance
+    SQL
+
+    @events = Event.select("events.*, #{distance_formula}")
+                   .includes(:creator, :participants, :event_participations)
                    .upcoming
-                   .near([current_user.latitude, current_user.longitude], 20)
+                   .where("start_date > ?", Time.current)
+                   .where(<<-SQL)
+                     events.latitude BETWEEN #{lat} - 0.2895635662217 AND #{lat} + 0.2895635662217
+                     AND events.longitude BETWEEN #{lng} - 0.416202980215766 AND #{lng} + 0.416202980215766
+                     AND (
+                       3958.755864232 * 2 * ASIN(SQRT(
+                         POWER(SIN((#{lat} - events.latitude) * PI() / 180 / 2), 2) +
+                         COS(#{lat} * PI() / 180) * COS(events.latitude * PI() / 180) *
+                         POWER(SIN((#{lng} - events.longitude) * PI() / 180 / 2), 2)
+                       ))
+                     ) <= 20
+                   SQL
+                   .order('calculated_distance ASC')
 
     @events = @events.by_level(params[:level]) if params[:level].present?
 
     render json: {
       events: @events.map { |event| event_with_details(event) },
-      total: @events.size
+      total: @events.size,
+      debug: {
+        total_events: Event.count,
+        upcoming_events: Event.upcoming.count,
+        filtered_events: @events.size
+      }
     }
   end
 
@@ -54,7 +83,6 @@ class Api::EventsController < ApplicationController
     participation = @event.event_participations.build(user: current_user)
 
     if participation.save
-      # Envoyer une notification au créateur
       render json: event_with_details(@event)
     else
       render json: { errors: participation.errors.full_messages }, status: :unprocessable_entity
@@ -103,8 +131,14 @@ class Api::EventsController < ApplicationController
 
   def event_params
     params.require(:event).permit(
-      :name, :description, :start_date, :location,
-      :distance, :pace, :level, :max_participants
+      :name,
+      :description,
+      :start_date,
+      :location,
+      :distance,
+      :pace,
+      :level,
+      :max_participants
     )
   end
 
@@ -121,24 +155,24 @@ class Api::EventsController < ApplicationController
       description: event.description,
       start_date: event.start_date,
       location: event.location,
-      distance: event.distance,
+      distance: event.calculated_distance.to_f.round(2),
       pace: event.pace,
       level: event.level,
       status: event.status,
       latitude: event.latitude,
       longitude: event.longitude,
-      participants_count: event.participants.count,
+      participants_count: event.participants.size,
       max_participants: event.max_participants,
-      spots_left: event.spots_left,
+      spots_left: event.max_participants - event.participants.size,
       creator: {
         id: event.creator.id,
         name: event.creator.first_name,
         profile_image: event.creator.profile_image
       },
-      is_creator: event.creator?(current_user),
-      is_participant: event.participant?(current_user),
-      can_join: event.can_join?(current_user),
-      can_leave: event.can_leave?(current_user)
+      is_creator: event.creator_id == current_user.id,
+      is_participant: event.participants.map(&:id).include?(current_user.id),
+      can_join: !event.participants.map(&:id).include?(current_user.id) && event.participants.size < event.max_participants,
+      can_leave: event.participants.map(&:id).include?(current_user.id)
     }
   end
 end
