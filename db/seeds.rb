@@ -151,29 +151,17 @@ GROUP_IMAGES = [
 ]
 
 EVENT_IMAGES = [
-  # Course en groupe / Running social
-  "https://images.unsplash.com/photo-1533560904424-a0c61c4aef5d",  # Groupe de coureurs urbains
-  "https://images.unsplash.com/photo-1540539234-c14a20fb7c7b",  # Course en groupe au coucher du soleil
-
-  # Trail / Course en montagne
-  "https://images.unsplash.com/photo-1483721310020-03333e577078",  # Trail runner en montagne
-  "https://images.unsplash.com/photo-1590101232142-58c1b44c3d18",  # Course en montagne panoramique
+  # Course en groupe
+  "https://res.cloudinary.com/dw5o8skat/image/upload/v1707485520/runmate/group-running.jpg",
+  "https://res.cloudinary.com/dw5o8skat/image/upload/v1707485520/runmate/sunset-running.jpg",
 
   # Course urbaine
-  "https://images.unsplash.com/photo-1461896836934-ffe607ba8211",  # Running urbain dynamique
-  "https://images.unsplash.com/photo-1538583307642-f0a1fac3607f",  # Course dans la ville
+  "https://res.cloudinary.com/dw5o8skat/image/upload/v1707485520/runmate/urban-running.jpg",
+  "https://res.cloudinary.com/dw5o8skat/image/upload/v1707485520/runmate/city-running.jpg",
 
   # Course nature
-  "https://images.unsplash.com/photo-1530143584546-02191bc84eb5",  # Course en forêt
-  "https://images.unsplash.com/photo-1552058544-f2b08422138a",  # Sentier naturel
-
-  # Entraînement / Performance
-  "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8",  # Entraînement intensif
-  "https://images.unsplash.com/photo-1616680214084-c29667e6e65c",  # Sprint/Fractionné
-
-  # Ambiance matinale
-  "https://images.unsplash.com/photo-1504025468847-0e438279542c",  # Course au lever du soleil
-  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e",  # Course en forêt matinale
+  "https://res.cloudinary.com/dw5o8skat/image/upload/v1707485520/runmate/trail-running.jpg",
+  "https://res.cloudinary.com/dw5o8skat/image/upload/v1707485520/runmate/forest-running.jpg"
 ]
 
 EVENT_TYPES = [

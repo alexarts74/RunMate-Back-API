@@ -194,11 +194,6 @@ class Api::EventsController < ApplicationController
 
   def set_event
     @event = Event.includes(:participants).find(params[:id])
-    Rails.logger.info "=== EVENT DETAILS ==="
-    Rails.logger.info "Event found: #{@event.present?}"
-    Rails.logger.info "Event status: #{@event.status}"
-    Rails.logger.info "Event max_participants: #{@event.max_participants}"
-    Rails.logger.info "Current participants: #{@event.participants.count}"
   end
 
   def event_params
@@ -210,7 +205,10 @@ class Api::EventsController < ApplicationController
       :distance,
       :level,
       :max_participants,
-      :cover_image
+      :cover_image,
+      :latitude,
+      :longitude,
+      :status
     )
   end
 
@@ -221,13 +219,22 @@ class Api::EventsController < ApplicationController
   end
 
   def event_with_details(event)
+    # Calculer la distance si les coordonnées sont disponibles
+    distance = if event.respond_to?(:calculated_distance)
+      event.calculated_distance.to_f.round(2)
+    elsif event.latitude && event.longitude && current_user.latitude && current_user.longitude
+      event.distance_to([current_user.latitude, current_user.longitude]).to_f.round(2)
+    else
+      nil
+    end
+
     {
       id: event.id,
       name: event.name,
       description: event.description,
       start_date: event.start_date,
       location: event.location,
-      distance: event.calculated_distance.to_f.round(2),
+      distance: distance,
       level: event.level,
       status: event.status,
       latitude: event.latitude,

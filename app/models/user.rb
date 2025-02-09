@@ -11,7 +11,7 @@ class User < ApplicationRecord
     has_many :created_groups, class_name: 'RunningGroup', foreign_key: 'creator_id'
     has_many :group_memberships
     has_many :running_groups, through: :group_memberships
-    has_many :created_events, class_name: 'GroupEvent', foreign_key: 'creator_id'
+    has_many :created_events, class_name: 'Event', foreign_key: 'creator_id'
     has_many :event_participations
     has_many :group_events, through: :event_participations
     has_many :join_requests, dependent: :destroy
